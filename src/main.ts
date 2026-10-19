@@ -30,6 +30,7 @@ import {
 import AutoLaunch from "auto-launch";
 import electronDl from "electron-dl";
 import contextMenu from "electron-context-menu";
+import { EXPERIMENT_APP_ID, EXPERIMENT_NAME } from "./utils/isolation";
 import { isAltusPartition, isTrustedWhatsAppURL, getSafeExternalHttpURL } from "./utils/security";
 import { SettingsSchema } from "./stores/settings/common";
 
@@ -123,7 +124,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       webviewTag: true,
     },
-    title: `Altus ${app.getVersion()}`,
+    title: `${EXPERIMENT_NAME} ${app.getVersion()}`,
     show: false,
     frame: !useCustomTitlebar,
     titleBarStyle: useCustomTitlebar ? "hidden" : "default",
@@ -207,15 +208,12 @@ if (!singleInstanceLock) {
   });
 
   app.on("ready", () => {
+    if (process.platform === "win32") app.setAppUserModelId(EXPERIMENT_APP_ID);
     const userAgentFallback = app.userAgentFallback;
     app.userAgentFallback = userAgentFallback.replace(
       /(Altus|Electron)([^\s]+\s)/g,
       ""
     );
-
-    if (app.isPackaged && getSettingWithDefault("registerProtocol")) {
-      app.setAsDefaultProtocolClient("whatsapp");
-    }
 
     if (process.argv.some((arg) => arg.includes("whatsapp"))) {
       handleWhatsappLinks(process.argv);
@@ -228,7 +226,7 @@ if (!singleInstanceLock) {
     );
 
     const autoLauncher = new AutoLaunch({
-      name: "Altus",
+      name: EXPERIMENT_NAME,
     });
 
     if (getSettingWithDefault("autoLaunch")) {
@@ -400,7 +398,7 @@ function toggleTray(mainWindow: BrowserWindow, enabled: boolean) {
         })
       : trayIcon
   );
-  tray.setToolTip("Altus");
+  tray.setToolTip(EXPERIMENT_NAME);
   tray.setContextMenu(getLocalizedTrayMenu());
   tray.on("click", () => {
     if (process.platform !== "darwin") {
@@ -691,7 +689,7 @@ async function initializeI18N(mainWindow: BrowserWindow) {
   }
 }
 
-const versionInfo = `Altus: ${app.getVersion()}
+const versionInfo = `${EXPERIMENT_NAME}: ${app.getVersion()}
 Electron: ${process.versions.electron}
 Chrome: ${process.versions.chrome}
 V8: ${process.versions.v8}
@@ -917,7 +915,7 @@ function getLocalizedMainMenu() {
             dialog
               .showMessageBox({
                 type: "info",
-                title: `Altus v${app.getVersion()}`,
+                title: `${EXPERIMENT_NAME} v${app.getVersion()}`,
                 message: `Made by Aman Harwara.`,
                 detail: aboutDialogText,
                 icon: mainIcon,
@@ -927,9 +925,7 @@ function getLocalizedMainMenu() {
                 const buttonClicked = res.response;
                 switch (buttonClicked) {
                   case 0:
-                    clipboard.write({
-                      text: versionInfo,
-                    });
+                    void clipboard.writeText(versionInfo).catch(console.error);
                     break;
                 }
               })

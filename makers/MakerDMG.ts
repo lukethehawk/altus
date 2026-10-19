@@ -24,8 +24,8 @@ export default class MakerDMG extends MakerBase<MakerOptions> {
     await fs.emptyDir(outPath);
 
     await fs.copy(
-      path.resolve(options.dir, "Altus.app"),
-      path.resolve(tmpPath, "Altus.app")
+      path.resolve(options.dir, `${appName}.app`),
+      path.resolve(tmpPath, `${appName}.app`)
     );
 
     const assets = path.resolve(__dirname, "..", "public", "assets");

@@ -7,14 +7,9 @@ import MakerDMG from "./makers/MakerDMG";
 const config: ForgeConfig = {
   packagerConfig: {
     icon: "./public/assets/icons/icon",
-    appBundleId: "harwara.aman.altus",
+    appBundleId: "com.lukethehawk.altus.electron44test",
     appCategoryType: "public.app-category.social-networking",
-    protocols: [
-      {
-        name: "whatsapp",
-        schemes: ["whatsapp"],
-      },
-    ],
+    // No whatsapp:// protocol registration in the isolated test build.
   },
   rebuildConfig: {},
   makers: [new MakerAppImage(), new MakerDMG(), new MakerNSIS()],

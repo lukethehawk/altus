@@ -1,7 +1,7 @@
 {
-  "name": "altus",
-  "productName": "Altus",
-  "version": "5.8.1",
+  "name": "altus-electron44-test",
+  "productName": "Altus Electron 44 Test",
+  "version": "5.8.1-electron44.0",
   "description": "Desktop client for WhatsApp Web with themes & multiple account support.",
   "main": ".vite/build/main.js",
   "build": {
@@ -37,7 +37,7 @@
     "app-builder-lib": "^26.0.12",
     "autoprefixer": "^10.4.15",
     "dmg-builder": "^26.0.12",
-    "electron": "35.1.5",
+    "electron": "44.9.0",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.31.0",
     "postcss": "^8.5.3",

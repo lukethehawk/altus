@@ -33,7 +33,7 @@ export const DefaultSettingValues = {
   tabBar: true,
   tabBarPosition: "top",
   trayIcon: true,
-  registerProtocol: true,
+  registerProtocol: false,
   tabClosePrompt: true,
   closeToTray: false,
   exitPrompt: false,
