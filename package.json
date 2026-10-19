@@ -12,7 +12,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "tsc --noEmit && eslint --ext .ts,.tsx ."
+    "lint": "tsc --noEmit && eslint --ext .ts,.tsx .",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "keywords": [
     "whatsapp",

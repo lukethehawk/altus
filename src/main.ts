@@ -30,6 +30,8 @@ import {
 import AutoLaunch from "auto-launch";
 import electronDl from "electron-dl";
 import contextMenu from "electron-context-menu";
+import { isAltusPartition, isTrustedWhatsAppURL, getSafeExternalHttpURL } from "./utils/security";
+import { SettingsSchema } from "./stores/settings/common";
 
 const windowState = new Store<{
   width: number | null;
@@ -425,8 +427,14 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle(
     "settings-store-set",
-    (_event, key: SettingKey, value: unknown) => {
+    (event, key: SettingKey, value: unknown) => {
+      if (event.sender !== mainWindow.webContents) throw new Error("Unauthorized settings sender");
+      if (typeof key !== "string" || !Object.prototype.hasOwnProperty.call(SettingsSchema.shape, key)) {
+        throw new Error("Invalid setting key");
+      }
       if (value === undefined) return electronSettingsStore.delete(key);
+      const parsed = SettingsSchema.shape[key].safeParse({ value });
+      if (!parsed.success) throw new Error("Invalid setting value");
       if (key === "autoHideMenuBar") {
         changeAutoHideMenuBar(mainWindow, value as boolean);
       } else if (key === "trayIcon") {
@@ -442,7 +450,9 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle(
     "tab-store-set",
-    (_event, key: keyof TabStore, value: unknown) => {
+    (event, key: keyof TabStore, value: unknown) => {
+      if (event.sender !== mainWindow.webContents) throw new Error("Unauthorized tab sender");
+      if (!["tabs", "selectedTabId", "previouslyClosedTab"].includes(key)) throw new Error("Invalid tab store key");
       if (value === undefined) return electronTabStore.delete(key);
       return electronTabStore.set(key, value);
     }
@@ -454,31 +464,36 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle(
     "theme-store-set",
-    (_event, key: keyof ThemeStore, value: unknown) => {
+    (event, key: keyof ThemeStore, value: unknown) => {
+      if (event.sender !== mainWindow.webContents || key !== "themes") throw new Error("Unauthorized theme store update");
       if (value === undefined) return electronThemeStore.delete(key);
       return electronThemeStore.set(key, value);
     }
   );
 
-  ipcMain.handle("init-permission-handler", (_, partitionId: string) => {
+  ipcMain.handle("init-permission-handler", (event, partitionId: unknown) => {
+    if (event.sender !== mainWindow.webContents || !isAltusPartition(partitionId)) {
+      throw new Error("Unauthorized session partition");
+    }
     session
       .fromPartition(partitionId)
-      .setPermissionRequestHandler((_, permission, callback) => {
-        if (!HandledPermissions.includes(permission)) {
+      .setPermissionRequestHandler((requestingContents, permission, callback) => {
+        if (!isTrustedWhatsAppURL(requestingContents.getURL()) || !HandledPermissions.includes(permission)) {
           callback(false);
           return;
         }
         const isEnabled =
-          sessionPermissions[permission as SessionPermissionKey].has(
-            partitionId
-          );
+          sessionPermissions[permission as SessionPermissionKey].has(partitionId);
         callback(isEnabled);
       });
   });
 
   ipcMain.handle(
     "toggle-notifications",
-    (_event, enabled: boolean, partitionId: string) => {
+    (event, enabled: boolean, partitionId: string) => {
+      if (event.sender !== mainWindow.webContents || !isAltusPartition(partitionId) || typeof enabled !== "boolean") {
+        throw new Error("Invalid notification permission update");
+      }
       if (enabled) {
         sessionPermissions.notifications.add(partitionId);
       } else {
@@ -489,7 +504,10 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle(
     "toggle-media-permission",
-    (_event, enabled: boolean, partitionId: string) => {
+    (event, enabled: boolean, partitionId: string) => {
+      if (event.sender !== mainWindow.webContents || !isAltusPartition(partitionId) || typeof enabled !== "boolean") {
+        throw new Error("Invalid media permission update");
+      }
       if (enabled) {
         sessionPermissions.media.add(partitionId);
       } else {
@@ -498,8 +516,11 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     }
   );
 
-  ipcMain.on("open-link", (_event, url: string) => {
-    shell.openExternal(url);
+  ipcMain.on("open-link", (event, rawURL: unknown) => {
+    if (event.sender.getType() !== "webview" || !isTrustedWhatsAppURL(event.sender.getURL())) return;
+    const url = getSafeExternalHttpURL(rawURL);
+    if (!url) return;
+    void shell.openExternal(url).catch((error) => console.error("Failed to open external URL:", error));
   });
 
   ipcMain.handle(
@@ -552,13 +573,15 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
   });
 
   ipcMain.on("zoom", ({ sender }, type) => {
+    if (sender.getType() !== "webview" || !isTrustedWhatsAppURL(sender.getURL())) return;
+    if (!["in", "out", "reset"].includes(type)) return;
     const currentZoomFactor = sender.getZoomFactor();
     switch (type) {
       case "in":
-        sender.setZoomFactor(currentZoomFactor + 0.1);
+        sender.setZoomFactor(Math.min(2.5, currentZoomFactor + 0.1));
         break;
       case "out":
-        sender.setZoomFactor(currentZoomFactor - 0.1);
+        sender.setZoomFactor(Math.max(0.5, currentZoomFactor - 0.1));
         break;
       default:
         sender.setZoomFactor(1);
@@ -566,13 +589,25 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     }
   });
 
-  ipcMain.on("message-count", (_, detail) => {
-    mainWindow.webContents.send("message-count", detail);
+  const unreadByTab = new Map<string, number>();
+  ipcMain.on("message-count", (event, detail: unknown) => {
+    if (event.sender.getType() !== "webview" || !isTrustedWhatsAppURL(event.sender.getURL())) return;
+    if (!detail || typeof detail !== "object") return;
+    const { tabId, messageCount } = detail as { tabId?: unknown; messageCount?: unknown };
+    if (typeof tabId !== "string" || !Number.isSafeInteger(messageCount) ||
+        (messageCount as number) < 0 || (messageCount as number) > 100000) return;
+    const activeIds = new Set(electronTabStore.get("tabs").map((tab) => tab.id));
+    if (!activeIds.has(tabId)) return;
+    for (const id of unreadByTab.keys()) {
+      if (!activeIds.has(id)) unreadByTab.delete(id);
+    }
+    unreadByTab.set(tabId, messageCount as number);
+    mainWindow.webContents.send("message-count", { tabId, messageCount });
     if (!getSettingWithDefault("notificationBadge")) {
       return;
     }
-    const messageCount = detail.messageCount;
-    if (messageCount) {
+    const totalUnread = [...unreadByTab.values()].reduce((sum, count) => sum + count, 0);
+    if (totalUnread > 0) {
       switch (process.platform) {
         case "darwin":
           app.dock?.setBadge("·");

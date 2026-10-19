@@ -3,10 +3,10 @@ import { Theme } from "./stores/themes/common";
 import { formatSelectedText } from "./utils/webview/formatSelectedText";
 import { getLuminance } from "color2k";
 
-let titleElement: HTMLTitleElement;
+let titleElement: HTMLTitleElement | null = null;
 
 window.onload = () => {
-  titleElement = document.querySelector("title") as HTMLTitleElement;
+  titleElement = document.querySelector("title");
 
   // Reset initial theme
   document.body.querySelectorAll("script").forEach((script) => {
@@ -49,7 +49,6 @@ window.onload = () => {
 
   document.body.addEventListener("click", (event) => {
     if (!(event.target instanceof HTMLAnchorElement)) return;
-    console.log(event.target);
     if (
       event.target.tagName === "A" &&
       event.target.getAttribute("target") === "_blank"
@@ -75,8 +74,10 @@ function getMessageCountFromTitle(title: string) {
 }
 
 function registerTitleElementObserver() {
+  if (!titleElement) return;
+  const observedTitle = titleElement;
   new MutationObserver(function () {
-    const title = titleElement.textContent;
+    const title = observedTitle.textContent;
     if (!title) return;
 
     try {
@@ -90,7 +91,7 @@ function registerTitleElementObserver() {
     } catch (error) {
       console.error(error);
     }
-  }).observe(titleElement, {
+  }).observe(observedTitle, {
     subtree: true,
     childList: true,
     characterData: true,
@@ -231,9 +232,7 @@ ipcRenderer.on("set-id", (e, id) => {
   if (!document.body.dataset.tabId) {
     // send back initial message count
     ipcRenderer.send("message-count", {
-      messageCount: getMessageCountFromTitle(
-        titleElement.textContent as string
-      ),
+      messageCount: getMessageCountFromTitle(titleElement?.textContent ?? ""),
       tabId: id,
     });
   }
