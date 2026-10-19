@@ -1,0 +1,29 @@
+name: Memory sampler PowerShell syntax
+
+on:
+  push:
+    branches:
+      - diagnostics/compare-process-memory
+
+permissions:
+  contents: read
+
+jobs:
+  parse:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse Windows PowerShell script
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $PWD 'scripts/compare-altus-processes.ps1'),
+            [ref]$tokens, [ref]$parseErrors
+          )
+          if ($parseErrors.Count -ne 0) {
+            $parseErrors | Format-List | Out-String | Write-Error
+            exit 1
+          }
+          Write-Host 'PowerShell syntax verified'
