@@ -1,16 +1,20 @@
 import { createStore, unwrap } from "solid-js/store";
 import { ThemeStoreDefaults, type ThemeStore, Theme } from "./common";
-import { createEffect } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 
 const [themeStore, updateThemeStore] = createStore<ThemeStore>(
   ThemeStoreDefaults()
 );
+const [hasLoadedThemes, setHasLoadedThemes] = createSignal(false);
 
 window.electronThemeStore.getStore().then((store) => {
   updateThemeStore(store);
+  setHasLoadedThemes(true);
 });
 
 createEffect(() => {
+  // Do not save built-in defaults before asynchronous disk hydration finishes.
+  if (!hasLoadedThemes()) return;
   const themes = unwrap(themeStore.themes);
   window.electronThemeStore.setThemes(themes);
 });
