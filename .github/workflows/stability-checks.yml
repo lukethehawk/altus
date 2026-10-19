@@ -28,3 +28,17 @@ jobs:
         continue-on-error: true
       - name: Test IPC security helpers
         run: yarn test
+
+  windows-package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable Yarn
+        run: corepack enable
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Build Windows installer
+        run: yarn make -p win32
