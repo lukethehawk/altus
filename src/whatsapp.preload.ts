@@ -114,7 +114,7 @@ function setThemeColors(colors: NonNullable<Theme["colors"]>) {
   document.body.classList.add("custom");
 
   const bgLuminance = getLuminance(colors.bg);
-  console.log(bgLuminance);
+  // Avoid verbose logging every time a theme is reapplied.
 
   let colorMixColor = "white";
   let colorMixColorOpposite = "black";

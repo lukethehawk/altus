@@ -117,8 +117,8 @@ function createWindow() {
     minHeight: 395,
     width: rememberWindowSize ? windowState.get("width") || 800 : undefined,
     height: rememberWindowSize ? windowState.get("height") || 600 : undefined,
-    x: rememberWindowPosition ? windowState.get("x") || undefined : undefined,
-    y: rememberWindowPosition ? windowState.get("y") || undefined : undefined,
+    x: rememberWindowPosition ? windowState.get("x") ?? undefined : undefined,
+    y: rememberWindowPosition ? windowState.get("y") ?? undefined : undefined,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       webviewTag: true,
@@ -138,30 +138,40 @@ function createWindow() {
     );
   }
 
-  if (getSettingWithDefault("launchMinimized")) {
-    mainWindow.minimize();
-    mainWindow.blur();
-  } else {
-    mainWindow.once("ready-to-show", () => {
+  // The window starts hidden; minimizing it before ready-to-show could
+  // leave it inaccessible on some systems. Wait until its first paint.
+  mainWindow.once("ready-to-show", () => {
+    if (getSettingWithDefault("launchMinimized")) {
+      mainWindow.showInactive();
+      mainWindow.minimize();
+    } else {
       mainWindow.show();
       mainWindow.focus();
-    });
-  }
+    }
+  });
 
   changeAutoHideMenuBar(mainWindow, getSettingWithDefault("autoHideMenuBar"));
 
-  mainWindow.on("resize", () => {
-    windowState.store = mainWindow.getBounds();
-  });
-
-  mainWindow.on("move", () => {
-    windowState.store = mainWindow.getBounds();
-  });
+  // Resizing/moving can emit hundreds of events. Persist the normal bounds
+  // once activity settles, without writing on every animation frame.
+  let boundsSaveTimer: ReturnType<typeof setTimeout> | undefined;
+  const saveNormalBounds = () => {
+    if (mainWindow.isDestroyed() || mainWindow.isMinimized()) return;
+    windowState.store = mainWindow.getNormalBounds();
+  };
+  const scheduleBoundsSave = () => {
+    if (boundsSaveTimer) clearTimeout(boundsSaveTimer);
+    boundsSaveTimer = setTimeout(saveNormalBounds, 350);
+  };
+  mainWindow.on("resize", scheduleBoundsSave);
+  mainWindow.on("move", scheduleBoundsSave);
 
   mainWindow.on("blur", () => mainWindow.webContents.send("window-blurred"));
   mainWindow.on("focus", () => mainWindow.webContents.send("window-focused"));
 
   mainWindow.on("close", (event) => {
+    if (boundsSaveTimer) clearTimeout(boundsSaveTimer);
+    saveNormalBounds();
     const shouldCloseToTray = getSettingWithDefault("closeToTray");
     const shouldPrompt = getSettingWithDefault("exitPrompt");
     if (shouldCloseToTray) {
@@ -374,11 +384,11 @@ function changeAutoHideMenuBar(mainWindow: BrowserWindow, value: boolean) {
 }
 
 function toggleTray(mainWindow: BrowserWindow, enabled: boolean) {
-  if (!enabled) {
-    if (tray) tray.destroy();
-    tray = undefined;
-    return;
-  }
+  // Recreating an enabled tray icon without destroying the previous one leaks
+  // an OS tray resource and can leave duplicate icons after toggling settings.
+  if (tray) tray.destroy();
+  tray = undefined;
+  if (!enabled) return;
   if (process.platform === "darwin") {
     app.dock?.setMenu(getLocalizedTrayMenu());
   }
