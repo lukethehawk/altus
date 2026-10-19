@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-win:
@@ -19,29 +19,14 @@ jobs:
           node-version: '22'
       - name: Enable Corepack
         run: corepack enable
-      - name: Install and update lockfile
-        # Only this trusted branch regenerates the lockfile; review the diff before merging.
-        env:
-          YARN_ENABLE_IMMUTABLE_INSTALLS: 'false'
-          YARN_ENABLE_HARDENED_MODE: '0'
-        run: yarn install
+      - name: Install pinned dependencies
+        run: yarn install --immutable
       - name: Typecheck and lint
         run: yarn lint
       - name: IPC security tests
         run: yarn test
       - name: Package isolated Windows installer
         run: yarn make -p win32
-      - name: Save lockfile updates on test branch
-        shell: pwsh
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add yarn.lock
-          if (git diff --cached --quiet) { Write-Host "No lockfile changes" }
-          else {
-            git commit -m "build: resolve Electron 44.9.0 dependency lockfile"
-            git push origin HEAD:experiment/electron44-isolated
-          }
       - name: Downloadable Windows test installer
         uses: actions/upload-artifact@v4
         with:
