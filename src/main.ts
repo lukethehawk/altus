@@ -30,7 +30,12 @@ import {
 import AutoLaunch from "auto-launch";
 import electronDl from "electron-dl";
 import contextMenu from "electron-context-menu";
-import { EXPERIMENT_APP_ID, EXPERIMENT_NAME } from "./utils/isolation";
+import {
+  EXPERIMENT_APP_ID,
+  EXPERIMENT_NAME,
+  hasExplicitProfileDirectory,
+} from "./utils/isolation";
+import { getPartitionsToPrune } from "./utils/partitions";
 import { isAltusPartition, isTrustedWhatsAppURL, getSafeExternalHttpURL } from "./utils/security";
 import { SettingsSchema } from "./stores/settings/common";
 
@@ -225,14 +230,17 @@ if (!singleInstanceLock) {
       app.getPath("userData")
     );
 
-    const autoLauncher = new AutoLaunch({
-      name: EXPERIMENT_NAME,
-    });
-
-    if (getSettingWithDefault("autoLaunch")) {
-      autoLauncher.enable();
-    } else {
-      autoLauncher.disable();
+    // A smoke-test run on a throwaway profile must not rewrite the autostart
+    // entry of the installed app, which shares the same name.
+    if (!hasExplicitProfileDirectory()) {
+      const autoLauncher = new AutoLaunch({
+        name: EXPERIMENT_NAME,
+      });
+      // disable() rejects when no entry exists yet; nothing to do then.
+      (getSettingWithDefault("autoLaunch")
+        ? autoLauncher.enable()
+        : autoLauncher.disable()
+      ).catch((error) => console.warn("Autostart update failed", error));
     }
 
     const mainWindow = createWindow();
@@ -359,21 +367,27 @@ function pruneUnusedPartitions(
   const doesPartitionsDirectoryExist = fs.existsSync(partitionsDirectoryPath);
   if (!doesPartitionsDirectoryExist) return;
 
-  const partitions = fs.readdirSync(partitionsDirectoryPath);
-
-  const tabIds = tabs.map((tab) => tab.id.toLowerCase());
+  const tabIds = tabs.map((tab) => tab.id);
   if (previouslyClosedTab) {
     tabIds.push(previouslyClosedTab.id);
   }
 
-  partitions
-    .filter((id) => !tabIds.includes(id))
-    .forEach((id) => {
-      const partitionPath = path.join(partitionsDirectoryPath, id);
-      fs.rmSync(partitionPath, {
-        recursive: true,
-      });
-    });
+  let partitions: string[];
+  try {
+    partitions = fs.readdirSync(partitionsDirectoryPath);
+  } catch (error) {
+    console.error("Could not list partitions", error);
+    return;
+  }
+
+  for (const id of getPartitionsToPrune(partitions, tabIds)) {
+    // A locked file must not abort startup; retry on the next launch.
+    try {
+      fs.rmSync(path.join(partitionsDirectoryPath, id), { recursive: true });
+    } catch (error) {
+      console.warn("Could not remove unused partition", error);
+    }
+  }
 }
 
 function changeAutoHideMenuBar(mainWindow: BrowserWindow, value: boolean) {

@@ -9,6 +9,10 @@ export const EXPERIMENT_APP_ID = "com.lukethehawk.altus.electron44test";
 
 let configured = false;
 
+export function hasExplicitProfileDirectory(): boolean {
+  return app.commandLine.getSwitchValue("user-data-dir") !== "";
+}
+
 export function ensureIsolatedProfile(): void {
   if (configured) return;
   // An explicit --user-data-dir (used for smoke tests) wins, so a test run
