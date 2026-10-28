@@ -1,7 +1,7 @@
 {
   "name": "altus-plus",
   "productName": "Altus +",
-  "version": "5.8.1-plus.2",
+  "version": "5.8.1-plus.3",
   "description": "Desktop client for WhatsApp Web with themes & multiple account support.",
   "main": ".vite/build/main.js",
   "build": {
@@ -55,6 +55,7 @@
     "electron-context-menu": "^4.0.5",
     "electron-dl": "^4.0.0",
     "electron-store": "^8.1.0",
+    "electron-updater": "6.8.11",
     "nanoid": "^5.1.5",
     "solid-js": "^1.9.5",
     "tailwind-merge": "^3.2.0",

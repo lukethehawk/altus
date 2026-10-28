@@ -7,7 +7,6 @@ import {
   Menu,
   MenuItem,
   nativeImage,
-  net,
   session,
   shell,
   Tray,
@@ -39,12 +38,13 @@ import {
 } from "./utils/isolation";
 import { getPartitionsToPrune } from "./utils/partitions";
 import { recoverRendererOnFailure } from "./utils/rendererRecovery";
+import { REPOSITORY_URL } from "./utils/updates";
 import {
-  LATEST_RELEASE_API_URL,
-  REPOSITORY_URL,
-  compareVersions,
-  parseLatestRelease,
-} from "./utils/updates";
+  checkForUpdates,
+  installDownloadedUpdate,
+  isQuittingForUpdate,
+  setupAutoUpdater,
+} from "./updater";
 import { isAltusPartition, isTrustedWhatsAppURL, getSafeExternalHttpURL } from "./utils/security";
 import { SettingsSchema } from "./stores/settings/common";
 
@@ -115,14 +115,20 @@ function confirmAndExit() {
         return;
       }
       if (tray) tray.destroy();
-      app.exit(0);
+      exitApp();
     });
 }
 
 function quitApp() {
   const shouldPrompt = getSettingWithDefault("exitPrompt");
   if (shouldPrompt) confirmAndExit();
-  else app.exit(0);
+  else exitApp();
+}
+
+// app.exit() skips the quit event the updater installs on, so a downloaded
+// update is installed here explicitly (silently, without relaunching).
+function exitApp() {
+  if (!installDownloadedUpdate({ relaunch: false })) app.exit(0);
 }
 
 function createWindow() {
@@ -220,7 +226,9 @@ function createWindow() {
     saveNormalBounds();
     const shouldCloseToTray = getSettingWithDefault("closeToTray");
     const shouldPrompt = getSettingWithDefault("exitPrompt");
-    if (shouldCloseToTray) {
+    if (isQuittingForUpdate()) {
+      if (tray) tray.destroy();
+    } else if (shouldCloseToTray) {
       event.preventDefault();
       mainWindow.hide();
     } else if (shouldPrompt) {
@@ -312,7 +320,11 @@ if (!singleInstanceLock) {
 
     initializeI18N(mainWindow).then(() => {
       toggleTray(mainWindow, getSettingWithDefault("trayIcon"));
-      // Give the accounts time to load before possibly showing a dialog.
+      setupAutoUpdater({
+        translate: (key) => electronI18N.t(key),
+        icon: mainIcon,
+      });
+      // Give the accounts time to load before downloading in the background.
       if (getSettingWithDefault("checkForUpdates")) {
         setTimeout(() => {
           void checkForUpdates({ interactive: false });
@@ -837,59 +849,6 @@ const aboutDialogText = `With help from: MarceloZapatta, Dafnik, dmcdo, insign, 
 Thanks to: vednoc for Dark WhatsApp theme.
 
 ${versionInfo}`;
-
-/**
- * Look up the latest GitHub release. Nothing is downloaded or installed: the
- * user is pointed to the release page. Silent on startup unless an update
- * exists; the menu entry (interactive) also reports "up to date" and errors.
- */
-async function checkForUpdates({ interactive }: { interactive: boolean }) {
-  const t = (key: string) => electronI18N.t(key);
-  let latest: ReturnType<typeof parseLatestRelease> = null;
-  try {
-    const response = await net.fetch(LATEST_RELEASE_API_URL, {
-      headers: { Accept: "application/vnd.github+json" },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    latest = parseLatestRelease(await response.json());
-    if (!latest) throw new Error("Unexpected release data");
-  } catch (error) {
-    console.warn("Update check failed", error);
-    if (interactive) {
-      await dialog.showMessageBox({
-        type: "warning",
-        message: t("Could not check for updates"),
-        detail: `${t("Try again later or open the releases page.")}\n\n${String(error)}`,
-        buttons: [t("Open Releases Page"), "OK"],
-      }).then(({ response }) => {
-        if (response === 0) void shell.openExternal(`${REPOSITORY_URL}/releases`);
-      });
-    }
-    return;
-  }
-
-  const current = app.getVersion();
-  if ((compareVersions(latest.version, current) ?? 0) > 0) {
-    const { response } = await dialog.showMessageBox({
-      type: "info",
-      message: `${t("A new version is available")}: ${APP_NAME} ${latest.version}`,
-      detail: `${t("Installed version")}: ${current}`,
-      icon: mainIcon,
-      buttons: [t("Download"), t("Later")],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    if (response === 0) void shell.openExternal(latest.url);
-  } else if (interactive) {
-    await dialog.showMessageBox({
-      type: "info",
-      message: t("You are using the latest version"),
-      detail: `${APP_NAME} ${current}`,
-      icon: mainIcon,
-    });
-  }
-}
 
 function getLocalizedMainMenu() {
   const menuTemplate: (

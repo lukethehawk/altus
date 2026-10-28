@@ -16,6 +16,8 @@ const config: ForgeConfig = {
     // only the bundles and package.json instead of sources and node_modules.
     ignore: (file: string) =>
       !!file && file !== "/package.json" && !file.startsWith("/.vite"),
+    // Update source and cache folder for electron-updater.
+    extraResource: ["./app-update.yml"],
   },
   rebuildConfig: {},
   makers: [new MakerAppImage(), new MakerDMG(), new MakerNSIS()],

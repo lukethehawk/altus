@@ -35,6 +35,8 @@ export default class MakerNSIS extends MakerBase<MakerOptions> {
         win: [`nsis:${options.targetArch}`],
         config: {
           ...CommonConfig,
+          // buildForge's own output setting is replaced by this config object.
+          directories: { output: path.resolve(makeDir, "nsis/make") },
           icon: path.resolve(
             __dirname,
             "..",
@@ -55,9 +57,17 @@ export default class MakerNSIS extends MakerBase<MakerOptions> {
             artifactName: "Altus-Plus-Setup-${version}.${ext}",
             allowToChangeInstallationDirectory: true,
           },
-          publish: null,
+          // Describes where releases live so latest.yml (version + SHA512)
+          // and the .blockmap for the in-app updater are generated; nothing
+          // is uploaded from the build (publish: "never" below).
+          publish: { provider: "github", owner: "lukethehawk", repo: "altus" },
+          // Versions like 5.8.1-plus.3 must still produce latest.yml rather
+          // than a "plus" channel file.
+          detectUpdateChannel: false,
         },
-      }
+        // buildForge forwards this to build() but does not declare it.
+        publish: "never",
+      } as Parameters<typeof buildForge>[1]
     );
 
     log("Received output files", output);
@@ -71,6 +81,15 @@ export default class MakerNSIS extends MakerBase<MakerOptions> {
       }
 
       await fs.move(file, filePath);
+    }
+
+    // latest.yml is written next to the installer but not reported as an
+    // artifact; keep it, since the in-app updater reads it from the release.
+    const updateInfoPath = path.resolve(makeDir, "nsis/make/latest.yml");
+    if (fs.existsSync(updateInfoPath)) {
+      const filePath = path.resolve(makeDir, "latest.yml");
+      await fs.move(updateInfoPath, filePath, { overwrite: true });
+      result.push(filePath);
     }
 
     await fs.remove(tmpPath);
