@@ -32,7 +32,7 @@ Il progetto originale non riceve più aggiornamenti. Altus + lo mantiene su una 
 | 🩹 **Ripristino dai crash** | Un account che si blocca o va in crash si ricarica da solo, senza toccare gli altri. |
 | ⬆️ **Aggiornamenti integrati** | Le nuove versioni si scaricano in background, vengono verificate (SHA512) e si installano con un clic. Durante l'installazione resta visibile un avviso. |
 | 🌐 **English / Italiano** | Impostazioni → Lingua, con effetto immediato. |
-| 🛡️ **Più sicura** | Electron aggiornato (44), webview isolate, link aperti nel browser, IPC controllato. |
+| 🛡️ **Più sicura** | Electron aggiornato (44), pacchetto dell'app protetto da manomissioni, eseguibile e finestra blindati. [Dettagli](#sicurezza). |
 
 ## Download
 
@@ -64,6 +64,20 @@ Altus + usa una propria cartella dati. Non legge, modifica né cancella nulla de
 ## Privacy
 
 Nelle schede Altus + carica solo WhatsApp Web. L'unica altra connessione è verso GitHub, per controllare gli aggiornamenti, e puoi disattivarla. Non c'è telemetria.
+
+## Sicurezza
+
+| Ambito | Cosa fa Altus + |
+|---|---|
+| **Account** | Ogni account gira in una sessione propria, isolata e in sandbox: un account non vede i dati di un altro. |
+| **Contenuti web** | Le schede possono restare solo su WhatsApp Web. Gli altri link si aprono nel browser, i pop-up sono bloccati e i messaggi interni dell'app vengono accettati solo dalla finestra o dalla scheda giusta. |
+| **Finestra dell'app** | Una Content-Security-Policy permette alla finestra di eseguire solo il codice di Altus +. |
+| **Eseguibile** | Le fuse di Electron spengono `RunAsNode`, `NODE_OPTIONS` e `--inspect`: altri programmi non possono usare l'eseguibile di Altus + per far girare codice proprio. |
+| **Integrità** | All'avvio l'app controlla il proprio pacchetto (`app.asar`) e si rifiuta di partire se è stato modificato. |
+| **Aggiornamenti** | Scaricati solo dalle release di questo repository e installati solo se lo SHA512 corrisponde. |
+| **Dipendenze** | Un audit settimanale fallisce su nuovi avvisi high o critical nelle dipendenze dell'app e su qualsiasi avviso relativo a Electron; Dependabot propone le correzioni di sicurezza. Gli avvisi noti, e perché non riguardano l'app, sono in [`docs/DEPENDENCY-AUDIT-ELECTRON44.md`](docs/DEPENDENCY-AUDIT-ELECTRON44.md). |
+
+Non ancora fatto: l'installer non è firmato digitalmente e i cookie di sessione sono salvati come fa Chromium di default (non cifrati). Hai trovato un problema di sicurezza? Segnalalo con un [avviso di sicurezza privato](https://github.com/lukethehawk/altus-plus/security/advisories/new) invece che con una issue pubblica.
 
 ## Compilare dai sorgenti
 

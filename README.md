@@ -32,7 +32,7 @@ The original project is no longer updated. Altus + keeps it running on a current
 | 🩹 **Crash recovery** | A crashed or frozen account reloads on its own without touching the others. |
 | ⬆️ **In-app updates** | New releases download in the background, are verified (SHA512) and install with one click. A notice stays on screen while they install. |
 | 🌐 **English / Italiano** | Settings → Language, applied at once. |
-| 🛡️ **Hardened** | Up-to-date Electron (44), locked-down webviews, links opened in your browser, checked IPC. |
+| 🛡️ **Hardened** | Up-to-date Electron (44), tamper-checked app package, locked-down executable and window. [Details](#security). |
 
 ## Download
 
@@ -64,6 +64,20 @@ Altus + uses its own data folder. It does not read, change or remove anything be
 ## Privacy
 
 Altus + loads WhatsApp Web and nothing else in its tabs. Its only other connection is to GitHub, to check for updates, and you can switch that off. There is no telemetry.
+
+## Security
+
+| Area | What Altus + does |
+|---|---|
+| **Accounts** | Each account runs in its own sandboxed, isolated session; one account cannot see another's data. |
+| **Web content** | Tabs can only stay on WhatsApp Web. Other links open in your browser, pop-ups are blocked, and the app's internal messages are checked against the window or tab that sent them. |
+| **App window** | A Content-Security-Policy lets the window run only Altus +'s own code. |
+| **Executable** | Electron fuses turn off `RunAsNode`, `NODE_OPTIONS` and `--inspect`, so other programs cannot use the Altus + executable to run their own code. |
+| **Integrity** | At startup the app checks its own package (`app.asar`) and refuses to start if it has been modified. |
+| **Updates** | Downloaded only from this repository's releases and installed only if the SHA512 matches. |
+| **Dependencies** | A weekly audit fails on new high or critical advisories in the app's dependencies and on any Electron advisory; Dependabot proposes security fixes. Known advisories and why they do not affect the app are listed in [`docs/DEPENDENCY-AUDIT-ELECTRON44.md`](docs/DEPENDENCY-AUDIT-ELECTRON44.md). |
+
+Not done yet: the installer is not code-signed, and session cookies are stored the way Chromium stores them by default (not encrypted). Found a security problem? Please report it through a [private security advisory](https://github.com/lukethehawk/altus-plus/security/advisories/new) rather than a public issue.
 
 ## Build from source
 
