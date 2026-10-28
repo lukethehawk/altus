@@ -48,5 +48,20 @@
   "Mute notifications for 1 hour": "Silenzia notifiche per 1 ora",
   "Mute notifications for 8 hours": "Silenzia notifiche per 8 ore",
   "Mute notifications until turned back on": "Silenzia notifiche fino a riattivazione",
-  "Unmute notifications": "Riattiva notifiche"
+  "Unmute notifications": "Riattiva notifiche",
+  "checkForUpdates": "Controlla aggiornamenti all'avvio",
+  "checkForUpdatesDescription": "Cerca l'ultima release di Altus + su GitHub e ti avvisa quando ne esce una nuova. Non scarica nulla in automatico.",
+  "Could not check for updates": "Impossibile controllare gli aggiornamenti",
+  "Try again later or open the releases page.": "Riprova più tardi o apri la pagina delle release.",
+  "Open Releases Page": "Apri pagina release",
+  "A new version is available": "È disponibile una nuova versione",
+  "Installed version": "Versione installata",
+  "Download": "Scarica",
+  "Later": "Più tardi",
+  "You are using the latest version": "Stai usando l'ultima versione",
+  "Maintained by lukethehawk. Fork of Altus by Aman Harwara.": "Mantenuto da lukethehawk. Fork di Altus di Aman Harwara.",
+  "Open GitHub": "Apri GitHub",
+  "Copy Version Info": "Copia info versione",
+  "Releases": "Release",
+  "Original Altus project": "Progetto Altus originale"
 }
