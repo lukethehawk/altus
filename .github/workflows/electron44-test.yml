@@ -1,0 +1,36 @@
+name: Electron 44 isolated Windows build
+
+on:
+  push:
+    branches:
+      - experiment/electron44-isolated
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install pinned dependencies
+        run: yarn install --immutable
+      - name: Typecheck and lint
+        run: yarn lint
+      - name: IPC security tests
+        run: yarn test
+      - name: Package isolated Windows installer
+        run: yarn make -p win32
+      - name: Downloadable Windows test installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Altus-Electron44-Test-Windows
+          path: out/make/**/*.exe
+          if-no-files-found: error
+          retention-days: 14
