@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - experiment/electron44-isolated
+      - security/electron44-deps-refresh
   workflow_dispatch:
 
 permissions:
