@@ -1,0 +1,105 @@
+<div align="center">
+
+<img src="public/assets/icons/icon.png" alt="Icona di Altus +" width="96" />
+
+# Altus +
+
+**Più account WhatsApp in un'unica app desktop, sempre aggiornata.**
+
+[![Ultima release](https://img.shields.io/github/v/release/lukethehawk/altus-plus?label=release)](https://github.com/lukethehawk/altus-plus/releases/latest)
+[![Piattaforma](https://img.shields.io/badge/piattaforma-Windows%20x64-0078D6)](https://github.com/lukethehawk/altus-plus/releases/latest)
+[![Licenza](https://img.shields.io/github/license/lukethehawk/altus-plus?label=licenza)](LICENSE)
+
+[English](README.md) · **Italiano**
+
+</div>
+
+---
+
+Altus + è un fork mantenuto di [**Altus**](https://github.com/amanharwara/altus) di [Aman Harwara](https://github.com/amanharwara): un'app Electron che racchiude WhatsApp Web, con una scheda per ogni account.
+
+Il progetto originale non riceve più aggiornamenti. Altus + lo mantiene su una versione recente di Electron e aggiunge ciò che serve per usare ogni giorno più account. Le priorità sono **prima la sicurezza, poi la stabilità, poi il consumo di risorse**.
+
+## In breve
+
+| | |
+|---|---|
+| 👥 **Più account** | Una scheda per ogni account WhatsApp, ognuna con la propria sessione isolata. |
+| 🔔 **Notifiche chiare** | Il titolo della notifica indica l'account (`Lavoro · Mario Rossi`). Un clic apre la scheda e la chat giuste. |
+| 🔕 **Silenzia per account** | Clic destro su una scheda per silenziarla per 1 ora, 8 ore o finché non la riattivi. Gli altri account continuano a notificare. |
+| 🔊 **Audio in background** | I vocali continuano a suonare quando cambi scheda; le schede inattive non vengono mai sospese né silenziate. |
+| 📎 **Avviso download** | "Allegato salvato · Mostra nella cartella" dopo ogni download. |
+| 🩹 **Ripristino dai crash** | Un account che si blocca o va in crash si ricarica da solo, senza toccare gli altri. |
+| ⬆️ **Aggiornamenti integrati** | Le nuove versioni si scaricano in background, vengono verificate (SHA512) e si installano con un clic. Durante l'installazione resta visibile un avviso. |
+| 🌐 **English / Italiano** | Impostazioni → Lingua, con effetto immediato. |
+| 🛡️ **Più sicura** | Electron aggiornato (44), webview isolate, link aperti nel browser, IPC controllato. |
+
+## Download
+
+1. Scarica **`Altus-Plus-Setup-<versione>.exe`** dall'[ultima release](https://github.com/lukethehawk/altus-plus/releases/latest).
+2. Avvialo e segui l'installazione.
+
+> [!NOTE]
+> L'installer non è firmato digitalmente, quindi Windows SmartScreen potrebbe mostrare "Windows ha protetto il PC". Clicca **Ulteriori informazioni → Esegui comunque**. Ogni release riporta lo SHA256 dell'installer, se vuoi verificarlo.
+
+Da lì in poi Altus + si aggiorna da solo. Controlla all'avvio (Impostazioni → *Controlla aggiornamenti all'avvio*) oppure da **Aiuto → Controlla aggiornamenti**, poi chiede **Riavvia ora / Più tardi**.
+
+Altus + usa una propria cartella dati. Non legge, modifica né cancella nulla dell'Altus originale, quindi puoi tenerli installati entrambi.
+
+## Scorciatoie da tastiera
+
+| Azione | Scorciatoia |
+|---|---|
+| Nuova scheda | `Ctrl+T` |
+| Modifica scheda attiva | `Ctrl+E` |
+| Chiudi scheda attiva | `Ctrl+W` |
+| Riapri scheda chiusa | `Ctrl+Shift+T` |
+| Scheda successiva / precedente | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
+| Prima / ultima scheda | `Ctrl+1` / `Ctrl+9` |
+| Impostazioni | `Ctrl+,` |
+| Gestore temi | `Alt+T` |
+| Controlla aggiornamenti | `Ctrl+Shift+U` |
+| Esci | `Ctrl+Q` |
+
+## Privacy
+
+Nelle schede Altus + carica solo WhatsApp Web. L'unica altra connessione è verso GitHub, per controllare gli aggiornamenti, e puoi disattivarla. Non c'è telemetria.
+
+## Compilare dai sorgenti
+
+Servono Node.js 22 o successivo e Corepack (Yarn 4).
+
+```bash
+corepack enable
+yarn install --immutable
+yarn start        # avvio in sviluppo
+yarn lint         # controllo tipi + ESLint
+yarn test         # test unitari
+yarn make         # installer Windows in out/make
+```
+
+I passi per una release sono in [`docs/RELEASING.md`](docs/RELEASING.md), le verifiche manuali in [`TESTING-ELECTRON44.md`](TESTING-ELECTRON44.md).
+
+## Segnalazioni
+
+Hai trovato un bug o hai un'idea? [Apri una issue](https://github.com/lukethehawk/altus-plus/issues). Per un bug indica la versione (Aiuto → Informazioni → Copia info versione).
+
+## Ringraziamenti
+
+Altus + esiste grazie ad [**Altus**](https://github.com/amanharwara/altus) di **Aman Harwara** e a chi ha contribuito al progetto:
+
+- [Melvin-Abraham](https://github.com/Melvin-Abraham): correzioni di [#53](https://github.com/amanharwara/altus/issues/53), [#55](https://github.com/amanharwara/altus/issues/55)
+- [Dylan McDougall](https://github.com/dmcdo): conferma all'uscita ([#10](https://github.com/amanharwara/altus/pull/10))
+- [Dafnik](https://github.com/Dafnik): correzione di [#4](https://github.com/amanharwara/altus/issues/4) ([#5](https://github.com/amanharwara/altus/pull/5))
+- [Marcelo Zapatta](https://github.com/MarceloZapatta): icona nel tray su Linux ([#77](https://github.com/amanharwara/altus/pull/77))
+- [Maicol Battistini](https://github.com/maicol07): traduzione italiana ([#153](https://github.com/amanharwara/altus/pull/153))
+- [Nicolás González Meneses](https://github.com/ngmoviedo): traduzione spagnola ([#163](https://github.com/amanharwara/altus/pull/163))
+- [Hugo Rocha de Moura](https://github.com/hugorochaffs): traduzione portoghese ([#185](https://github.com/amanharwara/altus/pull/185))
+
+Realizzato con [Electron](https://www.electronjs.org/), [SolidJS](https://www.solidjs.com/), [Kobalte](https://kobalte.dev/), [electron-store](https://github.com/sindresorhus/electron-store) ed [electron-updater](https://www.electron.build/auto-update). Il tema scuro si basa su [vednoc/dark-whatsapp](https://github.com/vednoc/dark-whatsapp).
+
+Altus + non è affiliato a WhatsApp né a Meta.
+
+## Licenza
+
+[GPL-3.0](LICENSE), come l'Altus originale. Il copyright del codice originale resta ai suoi autori.

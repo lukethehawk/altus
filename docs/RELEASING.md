@@ -1,7 +1,7 @@
 # Releasing Altus +
 
 The in-app updater (`src/updater.ts`, electron-updater) reads the latest
-**published, non-prerelease** GitHub release of `lukethehawk/altus` and needs
+**published, non-prerelease** GitHub release of `lukethehawk/altus-plus` and needs
 three files attached to it:
 
 | File | Purpose |

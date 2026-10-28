@@ -62,7 +62,7 @@ export default class MakerNSIS extends MakerBase<MakerOptions> {
           // Describes where releases live so latest.yml (version + SHA512)
           // and the .blockmap for the in-app updater are generated; nothing
           // is uploaded from the build (publish: "never" below).
-          publish: { provider: "github", owner: "lukethehawk", repo: "altus" },
+          publish: { provider: "github", owner: "lukethehawk", repo: "altus-plus" },
           // Versions like 5.8.1-plus.3 must still produce latest.yml rather
           // than a "plus" channel file.
           detectUpdateChannel: false,
