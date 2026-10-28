@@ -10,9 +10,14 @@ const [settingsStore, updateSettingsStore] = createStore<Settings>(
   getDefaultSettings()
 );
 
-window.electronSettingsStore.getStore().then((store) => {
-  updateSettingsStore(store);
-});
+const loadSettingsStore = () =>
+  window.electronSettingsStore.getStore().then((store) => {
+    updateSettingsStore(store);
+  });
+
+void loadSettingsStore();
+// The language can also change from the Edit menu, which saves it in main.
+window.electronIPCHandlers.onReloadTranslations(() => void loadSettingsStore());
 
 export function getSettingValue<Key extends SettingKey>(
   key: Key
