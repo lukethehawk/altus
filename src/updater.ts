@@ -6,6 +6,7 @@ import { REPOSITORY_URL } from "./utils/updates";
 type Translate = (key: string) => string;
 
 let translate: Translate = (key) => key;
+let getLanguage: () => string = () => "en";
 let dialogIcon: NativeImage | undefined;
 let configured = false;
 let interactiveCheck = false;
@@ -20,9 +21,11 @@ let quittingForUpdate = false;
  */
 export function setupAutoUpdater(options: {
   translate: Translate;
+  getLanguage: () => string;
   icon: NativeImage;
 }) {
   translate = options.translate;
+  getLanguage = options.getLanguage;
   dialogIcon = options.icon;
   if (configured) return;
   configured = true;
@@ -77,6 +80,7 @@ export function setupAutoUpdater(options: {
   autoUpdater.on("update-downloaded", (info) => {
     interactiveCheck = false;
     downloadedVersion = info.version;
+    passLanguageToInstaller();
     promptToRestart(info.version);
   });
 
@@ -128,9 +132,11 @@ function promptToRestart(version: string) {
     .showMessageBox({
       type: "info",
       message: `${translate("Update ready")}: ${APP_NAME} ${version}`,
-      detail: translate(
+      detail: `${translate(
         "Restart now to install it, or it will be installed the next time you quit Altus +."
-      ),
+      )}\n\n${translate(
+        "Installing takes about a minute: a small notice stays on screen until it is done. Wait for it before opening Altus + again."
+      )}`,
       buttons: [translate("Restart now"), translate("Later")],
       defaultId: 0,
       cancelId: 1,
@@ -139,6 +145,15 @@ function promptToRestart(version: string) {
     .then(({ response }) => {
       if (response === 0) installDownloadedUpdate({ relaunch: true });
     });
+}
+
+/**
+ * The installer inherits this process's environment; its update notice
+ * (makers/nsis/updateBanner.nsh) uses this to match the app's language.
+ * Set again right before installing in case the language changed since.
+ */
+function passLanguageToInstaller() {
+  process.env.ALTUS_UPDATE_LANGUAGE = getLanguage();
 }
 
 /** True while quitting to install, so close-to-tray must not cancel it. */
@@ -153,6 +168,7 @@ export function isQuittingForUpdate() {
 export function installDownloadedUpdate({ relaunch }: { relaunch: boolean }) {
   if (!downloadedVersion) return false;
   quittingForUpdate = true;
+  passLanguageToInstaller();
   // Silent NSIS install; relaunch only when the user asked to restart.
   autoUpdater.quitAndInstall(true, relaunch);
   return true;

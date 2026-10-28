@@ -87,7 +87,9 @@ logged in.
     `docs/RELEASING.md`), Help → Check for Updates says it is downloading,
     then offers "Restart now / Later". "Restart now" installs silently and
     reopens the new version with accounts and settings intact; "Later"
-    installs it when the app is quit from the tray or menu.
+    installs it when the app is quit from the tray or menu. While it
+    installs, a small "Updating Altus +" notice (in the app's language)
+    stays on screen and closes when the install is done.
 11. **Language:** a new profile starts in English. Settings → Language →
     Italiano switches menus, settings, tab dialogs, tray menu, the tab
     right-click menu and the exit prompt at once, with no English left;
