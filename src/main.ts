@@ -682,6 +682,22 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     return !mainWindow.isFocused();
   });
 
+  // A notification of some account was clicked: show the window on that
+  // account's tab. WhatsApp's own click handler then opens the chat.
+  ipcMain.on("notification-clicked", (event, tabId: unknown) => {
+    const { sender } = event;
+    if (sender.getType() !== "webview" || !isTrustedWhatsAppURL(sender.getURL())) return;
+    if (typeof tabId !== "string" || !isAltusPartition(`persist:${tabId}`)) return;
+    if (!electronTabStore.get("tabs").some((tab) => tab.id === tabId)) return;
+    // Only the tab's own session may bring that tab forward.
+    if (sender.session !== session.fromPartition(`persist:${tabId}`)) return;
+    if (mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send("select-tab", tabId);
+  });
+
   ipcMain.on("zoom", ({ sender }, type) => {
     if (sender.getType() !== "webview" || !isTrustedWhatsAppURL(sender.getURL())) return;
     if (!["in", "out", "reset"].includes(type)) return;

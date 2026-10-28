@@ -1,4 +1,4 @@
-import { Dialog } from "@kobalte/core";
+import { ContextMenu, Dialog } from "@kobalte/core";
 import {
   Accessor,
   Component,
@@ -7,6 +7,7 @@ import {
   createEffect,
   createSignal,
   onCleanup,
+  useContext,
 } from "solid-js";
 import {
   addTab,
@@ -16,10 +17,18 @@ import {
   restoreTab,
   setTabActive,
   tabStore,
+  updateAndSyncTabStore,
 } from "../stores/tabs/solid";
 import { Tab, getDefaultTab } from "../stores/tabs/common";
 import CloseIcon from "../icons/CloseIcon";
 import SettingsIcon from "../icons/SettingsIcon";
+import BellOffIcon from "../icons/BellOffIcon";
+import { I18NContext } from "../i18n/solid";
+import {
+  HOUR_MS,
+  MUTED_UNTIL_TURNED_ON,
+  isMuteActive,
+} from "../utils/notifications";
 import TabEditDialog from "./TabEditDialog";
 import { twJoin } from "tailwind-merge";
 import { getSettingValue } from "../stores/settings/solid";
@@ -36,6 +45,23 @@ const [draggedTab, setDraggedTab] = createSignal<{
   id: string;
   index: number;
 }>();
+
+// Coarse clock so timed notification mutes disappear from the UI on expiry.
+const [now, setNow] = createSignal(Date.now());
+setInterval(() => setNow(Date.now()), 30_000);
+
+function setNotificationsMutedUntil(tab: Tab, mutedUntil: number) {
+  updateAndSyncTabStore(
+    "tabs",
+    (t) => t.id === tab.id,
+    "config",
+    "notificationsMutedUntil",
+    mutedUntil
+  );
+}
+
+const menuItemClass =
+  "flex items-center w-full py-1.5 px-4 hover:bg-white/10 focus:bg-white/20 select-none outline-none cursor-default";
 
 const TabComponent: Component<TabComponentProps> = (props) => {
   const [messageCount, setMessageCount] = createSignal(0);
@@ -59,88 +85,147 @@ const TabComponent: Component<TabComponentProps> = (props) => {
   });
   const [isDragging, setIsDragging] = createSignal(false);
   const isSelected = () => props.tab.id === tabStore.selectedTabId;
+  const { t } = useContext(I18NContext);
+  const isMuted = () =>
+    isMuteActive(props.tab.config.notificationsMutedUntil, now());
 
   let tab: HTMLDivElement | undefined;
 
   return (
-    <div
-      role="tab"
-      ref={tab}
-      id={props.tab.id}
-      aria-controls={`tabpanel-${props.tab.id}`}
-      aria-selected={isSelected() ? "true" : "false"}
-      class="group flex flex-shrink-0 items-center gap-1.5 bg-zinc-800 px-3 py-1.5 text-white text-sm leading-4 ui-selected:bg-zinc-700 hover:bg-zinc-600 select-none"
-      classList={{
-        "opacity-50": isDragging(),
-        "border-l-2 border-blue-500": willDrop() === "before",
-        "border-r-2 border-blue-500": willDrop() === "after",
-      }}
-      style={
-        props.tab.config.color
-          ? {
-              background: props.tab.config.color,
-            }
-          : {}
-      }
-      onClick={() => setTabActive(props.tab.id)}
-      data-selected={isSelected() ? "" : undefined}
-      draggable={true}
-      onDragStart={(event) => {
-        if (!event.dataTransfer) return;
-        setDraggedTab({
-          id: props.tab.id,
-          index: props.index(),
-        });
-        event.dataTransfer.dropEffect = "move";
-        setIsDragging(true);
-      }}
-      onDragEnd={() => {
-        setIsDragging(false);
-        setDraggedTab(undefined);
-        setTabActive(props.tab.id);
-      }}
-      onDragEnter={() => {
-        const _draggedTab = draggedTab();
-        if (!_draggedTab) return;
-        const currentIndex = props.index();
-        const draggedTabIndex = _draggedTab.index;
-        if (currentIndex > draggedTabIndex) setWillDrop("after");
-        else if (currentIndex < draggedTabIndex) setWillDrop("before");
-        else setWillDrop(false);
-      }}
-      onDragLeave={(event) => {
-        if (draggedTab()?.id === props.tab.id) return;
-        if (
-          event.relatedTarget instanceof Node &&
-          tab?.contains(event.relatedTarget)
-        )
-          return;
-        setWillDrop(false);
-      }}
-    >
-      {!!messageCount() && (
-        <div class="flex items-center justify-center leading-none w-[4ch] h-5 bg-red-600 text-white rounded-full text-[length:0.65rem] mr-0.5">
-          {messageCount() > 99 ? "99+" : messageCount()}
+    <ContextMenu.Root>
+      <ContextMenu.Trigger as="div" class="flex flex-shrink-0">
+        <div
+          role="tab"
+          ref={tab}
+          id={props.tab.id}
+          aria-controls={`tabpanel-${props.tab.id}`}
+          aria-selected={isSelected() ? "true" : "false"}
+          class="group flex flex-shrink-0 items-center gap-1.5 bg-zinc-800 px-3 py-1.5 text-white text-sm leading-4 ui-selected:bg-zinc-700 hover:bg-zinc-600 select-none"
+          classList={{
+            "opacity-50": isDragging(),
+            "border-l-2 border-blue-500": willDrop() === "before",
+            "border-r-2 border-blue-500": willDrop() === "after",
+          }}
+          style={
+            props.tab.config.color
+              ? {
+                  background: props.tab.config.color,
+                }
+              : {}
+          }
+          onClick={() => setTabActive(props.tab.id)}
+          data-selected={isSelected() ? "" : undefined}
+          draggable={true}
+          onDragStart={(event) => {
+            if (!event.dataTransfer) return;
+            setDraggedTab({
+              id: props.tab.id,
+              index: props.index(),
+            });
+            event.dataTransfer.dropEffect = "move";
+            setIsDragging(true);
+          }}
+          onDragEnd={() => {
+            setIsDragging(false);
+            setDraggedTab(undefined);
+            setTabActive(props.tab.id);
+          }}
+          onDragEnter={() => {
+            const _draggedTab = draggedTab();
+            if (!_draggedTab) return;
+            const currentIndex = props.index();
+            const draggedTabIndex = _draggedTab.index;
+            if (currentIndex > draggedTabIndex) setWillDrop("after");
+            else if (currentIndex < draggedTabIndex) setWillDrop("before");
+            else setWillDrop(false);
+          }}
+          onDragLeave={(event) => {
+            if (draggedTab()?.id === props.tab.id) return;
+            if (
+              event.relatedTarget instanceof Node &&
+              tab?.contains(event.relatedTarget)
+            )
+              return;
+            setWillDrop(false);
+          }}
+        >
+          {!!messageCount() && (
+            <div class="flex items-center justify-center leading-none w-[4ch] h-5 bg-red-600 text-white rounded-full text-[length:0.65rem] mr-0.5">
+              {messageCount() > 99 ? "99+" : messageCount()}
+            </div>
+          )}
+          <Show when={isMuted()}>
+            <BellOffIcon
+              class="w-3.5 h-3.5 opacity-80"
+              role="img"
+              aria-label={t("Notifications muted")}
+            />
+          </Show>
+          <span>{props.tab.name}</span>
+          <button
+            class="flex items-center justify-center ml-0.5 w-6 h-6 hover:bg-zinc-800/50 rounded group-data-[selected]:hover:bg-zinc-800/50"
+            onClick={() => {
+              props.setTabToEdit(props.tab);
+            }}
+          >
+            <SettingsIcon class="w-4 h-4" />
+          </button>
+          <button
+            class="flex items-center justify-center w-6 h-6 hover:bg-zinc-800/50 rounded group-data-[selected]:hover:bg-zinc-800/50"
+            onClick={() => {
+              props.removeTab(props.tab);
+            }}
+          >
+            <CloseIcon class="w-5 h-5" />
+          </button>
         </div>
-      )}
-      <span>{props.tab.name}</span>
-      <button
-        class="flex items-center justify-center ml-0.5 w-6 h-6 hover:bg-zinc-800/50 rounded group-data-[selected]:hover:bg-zinc-800/50"
-        onClick={() => {
-          props.setTabToEdit(props.tab);
-        }}
-      >
-        <SettingsIcon class="w-4 h-4" />
-      </button>
-      <button
-        class="flex items-center justify-center w-6 h-6 hover:bg-zinc-800/50 rounded group-data-[selected]:hover:bg-zinc-800/50"
-        onClick={() => {
-          props.removeTab(props.tab);
-        }}
-      >
-        <CloseIcon class="w-5 h-5" />
-      </button>
-    </div>
+      </ContextMenu.Trigger>
+      <ContextMenu.Portal>
+        <ContextMenu.Content class="z-[100] min-w-[12rem] rounded border border-zinc-700 bg-[#202224] py-1 text-[13px] text-white shadow-lg shadow-black/40 outline-none">
+          <Show
+            when={isMuted()}
+            fallback={
+              <>
+                <ContextMenu.Item
+                  class={menuItemClass}
+                  onSelect={() =>
+                    setNotificationsMutedUntil(props.tab, Date.now() + HOUR_MS)
+                  }
+                >
+                  {t("Mute notifications for 1 hour")}
+                </ContextMenu.Item>
+                <ContextMenu.Item
+                  class={menuItemClass}
+                  onSelect={() =>
+                    setNotificationsMutedUntil(
+                      props.tab,
+                      Date.now() + 8 * HOUR_MS
+                    )
+                  }
+                >
+                  {t("Mute notifications for 8 hours")}
+                </ContextMenu.Item>
+                <ContextMenu.Item
+                  class={menuItemClass}
+                  onSelect={() =>
+                    setNotificationsMutedUntil(props.tab, MUTED_UNTIL_TURNED_ON)
+                  }
+                >
+                  {t("Mute notifications until turned back on")}
+                </ContextMenu.Item>
+              </>
+            }
+          >
+            <ContextMenu.Item
+              class={menuItemClass}
+              onSelect={() => setNotificationsMutedUntil(props.tab, 0)}
+            >
+              {t("Unmute notifications")}
+            </ContextMenu.Item>
+          </Show>
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
   );
 };
 
@@ -205,6 +290,12 @@ const TabsList: Component = () => {
         return;
       }
       setTabActive(tabStore.tabs[previousIndex].id);
+    })
+  );
+
+  handlers.add(
+    window.electronIPCHandlers.onSelectTab((tabId) => {
+      if (tabStore.tabs.some((tab) => tab.id === tabId)) setTabActive(tabId);
     })
   );
 

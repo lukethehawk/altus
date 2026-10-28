@@ -65,6 +65,13 @@ logged in.
    folder" appears for a few seconds and the button opens Explorer with the
    file selected. With "Show save dialog" on (the default) it appears after
    the file is saved.
+8. **Multi-account notifications:** a message to a background account shows
+   "<tab name> · <sender>" as title. Clicking it brings Altus forward (also
+   from the tray), switches to that account and WhatsApp opens the chat.
+9. **Per-account mute:** right-click a tab, "Mute notifications for 1 hour":
+   that account shows a crossed bell and no desktop notifications, while
+   unread counts still update and the other accounts still notify.
+   "Unmute notifications" restores them; timed mutes expire on their own.
 
 ### Packaged smoke run without touching your profile
 

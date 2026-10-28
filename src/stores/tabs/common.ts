@@ -11,6 +11,8 @@ export type Tab = {
     sound: boolean;
     color: string | null;
     spellChecker: boolean;
+    // Epoch ms until which desktop notifications of this account are hidden.
+    notificationsMutedUntil?: number;
   };
 };
 

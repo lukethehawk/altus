@@ -123,6 +123,11 @@ const ipcHandlers: ElectronIPCHandlers = {
     ipcRenderer.on("message-count", handler);
     return () => ipcRenderer.off("message-count", handler);
   },
+  onSelectTab: (callback) => {
+    const handler = (_: IpcRendererEvent, tabId: string) => callback(tabId);
+    ipcRenderer.on("select-tab", handler);
+    return () => ipcRenderer.off("select-tab", handler);
+  },
   onDownloadCompleted: (callback) => {
     const handler = (
       _: IpcRendererEvent,
