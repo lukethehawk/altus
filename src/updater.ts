@@ -36,7 +36,7 @@ export function setupAutoUpdater(options: {
   autoUpdater.setFeedURL(
     testFeed
       ? { provider: "generic", url: testFeed }
-      : { provider: "github", owner: "lukethehawk", repo: "altus" }
+      : { provider: "github", owner: "lukethehawk", repo: "altus-plus" }
   );
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

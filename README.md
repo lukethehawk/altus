@@ -1,102 +1,105 @@
-# Altus
+<div align="center">
 
-**Altus** is an Electron-based WhatsApp client with themes and multiple account support, available for Windows, Mac and Linux!
+<img src="public/assets/icons/icon.png" alt="Altus + icon" width="96" />
 
-## Installation
+# Altus +
 
-### Windows
+**Several WhatsApp accounts in one desktop app, kept up to date.**
 
-- Download the `.exe` file from the [latest release](https://github.com/amanharwara/altus/releases/latest)
-- Run the file and follow the setup wizard
+[![Latest release](https://img.shields.io/github/v/release/lukethehawk/altus-plus?label=release)](https://github.com/lukethehawk/altus-plus/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D6)](https://github.com/lukethehawk/altus-plus/releases/latest)
+[![License](https://img.shields.io/github/license/lukethehawk/altus-plus)](LICENSE)
 
-If you see a "Windows protected your PC" error, it's because Altus is not signed. If you have doubts you can verify the file is safe using something like VirusTotal or any other antivirus software.
-To continue with the installation,
+**English** · [Italiano](README.it.md)
 
-- Click on "More info"
-- Click "Run anyway"
+</div>
 
-### macOS
+---
 
-- Download one of the `.dmg` files from [latest release](https://github.com/amanharwara/altus/releases/latest)
-  - If you're on an Intel mac, download the regular `.dmg` file
-  - If you're on an M-series mac, download the `-arm64.dmg` file
-- Open the dmg file
-- Drag the `Altus` icon onto the `Applications` icon as instructed
+Altus + is a maintained fork of [**Altus**](https://github.com/amanharwara/altus) by [Aman Harwara](https://github.com/amanharwara), an Electron wrapper around WhatsApp Web with tabs for multiple accounts.
 
-If you're on an M-series (i.e. arm) macOS, you'll need to run the following command, otherwise you'll get a `Altus is damaged and cannot be opened.` error.
+The original project is no longer updated. Altus + keeps it running on a current Electron and adds what daily use with several accounts needs. It puts **security first, then stability, then resource use**.
 
-```console
-sudo xattr -d com.apple.quarantine /Applications/Altus.app
+## Highlights
+
+| | |
+|---|---|
+| 👥 **Multiple accounts** | One tab per WhatsApp account, each in its own isolated session. |
+| 🔔 **Clear notifications** | Notification titles show the account (`Work · Mario Rossi`). A click opens the right tab and chat. |
+| 🔕 **Per-account mute** | Right-click a tab to mute it for 1 hour, 8 hours or until you turn it back on. Other accounts keep notifying. |
+| 🔊 **Background audio** | Voice messages keep playing when you switch tab; inactive tabs are never suspended or muted. |
+| 📎 **Download notice** | "Attachment saved · Show in folder" after each download. |
+| 🩹 **Crash recovery** | A crashed or frozen account reloads on its own without touching the others. |
+| ⬆️ **In-app updates** | New releases download in the background, are verified (SHA512) and install with one click. A notice stays on screen while they install. |
+| 🌐 **English / Italiano** | Settings → Language, applied at once. |
+| 🛡️ **Hardened** | Up-to-date Electron (44), locked-down webviews, links opened in your browser, checked IPC. |
+
+## Download
+
+1. Download **`Altus-Plus-Setup-<version>.exe`** from the [latest release](https://github.com/lukethehawk/altus-plus/releases/latest).
+2. Run it and follow the setup.
+
+> [!NOTE]
+> The installer is not code-signed, so Windows SmartScreen may show "Windows protected your PC". Click **More info → Run anyway**. Each release lists the installer's SHA256 if you want to check it.
+
+From then on Altus + updates itself. It checks at startup (Settings → *Check for updates at startup*) or from **Help → Check for Updates**, then asks **Restart now / Later**.
+
+Altus + uses its own data folder. It does not read, change or remove anything belonging to the original Altus, so both can stay installed.
+
+## Keyboard shortcuts
+
+| Action | Shortcut |
+|---|---|
+| New tab | `Ctrl+T` |
+| Edit current tab | `Ctrl+E` |
+| Close current tab | `Ctrl+W` |
+| Reopen closed tab | `Ctrl+Shift+T` |
+| Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
+| First / last tab | `Ctrl+1` / `Ctrl+9` |
+| Settings | `Ctrl+,` |
+| Theme manager | `Alt+T` |
+| Check for updates | `Ctrl+Shift+U` |
+| Quit | `Ctrl+Q` |
+
+## Privacy
+
+Altus + loads WhatsApp Web and nothing else in its tabs. Its only other connection is to GitHub, to check for updates, and you can switch that off. There is no telemetry.
+
+## Build from source
+
+Requires Node.js 22 or later and Corepack (Yarn 4).
+
+```bash
+corepack enable
+yarn install --immutable
+yarn start        # run in development
+yarn lint         # type check + ESLint
+yarn test         # unit tests
+yarn make         # Windows installer in out/make
 ```
 
-### Linux
+Release steps are in [`docs/RELEASING.md`](docs/RELEASING.md) and manual checks in [`TESTING-ELECTRON44.md`](TESTING-ELECTRON44.md).
 
-- Download the `.AppImage` file from the [latest release](https://github.com/amanharwara/altus/releases/latest)
-- Make sure it is executable by running `chmod +x ./Altus-*.AppImage` in the same directory
-- Run the AppImage by either double-clicking it or running `./Altus-*.AppImage`
+## Feedback
 
-There are separate tools like [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) that make it easier to run the file and integrate it into your DE.
+Found a bug or have an idea? [Open an issue](https://github.com/lukethehawk/altus-plus/issues). For a bug, include the version (Help → About → Copy Version Info).
 
-## Features
+## Credits
 
-**Altus** uses the GitHub-produced Electron framework to wrap around WhatsApp Web and add extra features to it.
+Altus + exists thanks to [**Altus**](https://github.com/amanharwara/altus) by **Aman Harwara**, and to everyone who contributed to it:
 
-- **Multiple Account Support**: As of v2.0, you can use multiple WhatsApp accounts simultaneously!
-- **Native notification support** for all of the platforms. Clicking the notification opens that specific chat!
-- **Online Indicator**: Shows an indicator at the bottom-left corner of the chats that are online!
-- **Dark mode** for when you need to chill out your eyes in the night (or even in the day)
-- **Custom Theme Support**: Write your own CSS theme for WhatsApp or use the in-built Theme Customizer to create a new one just by picking colors!
-- **Available for most desktop platforms** including Windows (7 or above), Linux and MacOS.
-- **Tray icon** so you can minimize the app completely and still receive notifications.
+- [Melvin-Abraham](https://github.com/Melvin-Abraham) — fixes for [#53](https://github.com/amanharwara/altus/issues/53), [#55](https://github.com/amanharwara/altus/issues/55)
+- [Dylan McDougall](https://github.com/dmcdo) — exit confirmation dialog ([#10](https://github.com/amanharwara/altus/pull/10))
+- [Dafnik](https://github.com/Dafnik) — fix for [#4](https://github.com/amanharwara/altus/issues/4) ([#5](https://github.com/amanharwara/altus/pull/5))
+- [Marcelo Zapatta](https://github.com/MarceloZapatta) — Linux tray icon ([#77](https://github.com/amanharwara/altus/pull/77))
+- [Maicol Battistini](https://github.com/maicol07) — Italian translation ([#153](https://github.com/amanharwara/altus/pull/153))
+- [Nicolás González Meneses](https://github.com/ngmoviedo) — Spanish translation ([#163](https://github.com/amanharwara/altus/pull/163))
+- [Hugo Rocha de Moura](https://github.com/hugorochaffs) — Portuguese translation ([#185](https://github.com/amanharwara/altus/pull/185))
 
-## Feature Requests
+Built with [Electron](https://www.electronjs.org/), [SolidJS](https://www.solidjs.com/), [Kobalte](https://kobalte.dev/), [electron-store](https://github.com/sindresorhus/electron-store) and [electron-updater](https://www.electron.build/auto-update). The dark theme is based on [vednoc/dark-whatsapp](https://github.com/vednoc/dark-whatsapp).
 
-In order to submit a feature request, create a [new issue](https://github.com/amanharwara/altus/issues/new) with the label `enhancement`.
+Altus + is not affiliated with WhatsApp or Meta.
 
-Please make sure that you provide a helpful description of your feature request. If possible, try implementing the feature yourself by forking this repository and then creating a pull request.
+## License
 
-## Screenshots
-
-### First Start
-
-![Altus First Start](./img/Altus-First-Start.png)
-
-### Default Theme
-
-![Altus Default Theme](./img/Altus-Default-Theme.png)
-
-### "Dark Plus" Theme
-
-![Altus Dark Theme](./img/Altus-Dark-Theme.png)
-
-## Acknowledgements
-
-Below is the list of the dependencies that helped me greatly to create this app.
-
-#### Dark-Whatsapp [(vednoc/dark-whatsapp)](https://github.com/vednoc/dark-whatsapp) - used as the base for the dark theme. A really cool project, you should definitely check it out!
-
----
-
-#### Inter [rsms/inter](https://github.com/rsms/inter) - The font used in Altus.
-
----
-
-#### electron-store [(sindresorhus/electron-store)](https://github.com/sindresorhus/electron-store) - used to store information of settings, tabs and themes
-
-## Contributors
-
-Below is the list of contributors who have contributed to Altus by creating a feature or helping fix an issue.
-
-#### [Melvin-Abraham](https://github.com/Melvin-Abraham) - Helped fix issues #55, #53
-
-#### [Dylan McDougall](https://github.com/dmcdo) - PR #10 (Added feature - Confirmation Dialog on close)
-
-#### [Dafnik](https://github.com/Dafnik) - PR #5 (Helped fix issue #4)
-
-#### [Marcelo Zapatta](https://github.com/MarceloZapatta) - PR #77 (Fixed #23 by adding tray icon support on Linux)
-
-#### [Maicol Battistini](https://github.com/maicol07) - PR #153 (Added Italian translation)
-
-#### [Nicolás González Meneses](https://github.com/ngmoviedo) - PR #163 (Added Spanish translation)
-
-#### [Hugo Rocha de Moura](https://github.com/hugorochaffs) - PR #185 (Added Portuguese(pt) translation)
+[GPL-3.0](LICENSE), like the original Altus. Copyright of the original code remains with its authors.

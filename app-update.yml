@@ -2,5 +2,5 @@
 # (forge.config.ts extraResource). The Forge build does not generate it.
 provider: github
 owner: lukethehawk
-repo: altus
+repo: altus-plus
 updaterCacheDirName: altus-plus-updater
