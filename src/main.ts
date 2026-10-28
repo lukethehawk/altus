@@ -136,6 +136,30 @@ function createWindow() {
     icon: mainIcon,
   });
 
+  // Every <webview> must be a WhatsApp Web tab in its own persistent
+  // partition, running our preload without Node access, whatever the
+  // renderer asked for.
+  mainWindow.webContents.on(
+    "will-attach-webview",
+    (event, webPreferences, params) => {
+      if (
+        !isTrustedWhatsAppURL(params.src) ||
+        !isAltusPartition(params.partition)
+      ) {
+        event.preventDefault();
+        return;
+      }
+      webPreferences.preload = path.join(__dirname, "whatsapp.preload.js");
+      webPreferences.nodeIntegration = false;
+      webPreferences.nodeIntegrationInSubFrames = false;
+      webPreferences.contextIsolation = true;
+      webPreferences.sandbox = true;
+    }
+  );
+  // The app UI is a local page: it never navigates away or opens windows.
+  mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
@@ -274,6 +298,21 @@ if (!singleInstanceLock) {
 
   app.on("web-contents-created", (_, webContents) => {
     if (webContents.getType() === "webview") {
+      // Popups stay disabled as before (no allowpopups); _blank links are
+      // handled by the preload through the validated "open-link" channel.
+      webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+      // Keep each tab on WhatsApp Web; open other http(s) pages in the
+      // default browser instead of inside the account's session.
+      webContents.on("will-navigate", (event, url) => {
+        if (isTrustedWhatsAppURL(url)) return;
+        event.preventDefault();
+        const externalURL = getSafeExternalHttpURL(url);
+        if (!externalURL) return;
+        void shell
+          .openExternal(externalURL)
+          .catch((error) => console.error("Failed to open external URL:", error));
+      });
+
       contextMenu({
         window: {
           webContents: webContents,
@@ -438,16 +477,30 @@ type SessionPermissionKey = keyof typeof sessionPermissions;
 const HandledPermissions = Object.keys(sessionPermissions);
 
 function addIPCHandlers(mainWindow: BrowserWindow) {
-  ipcMain.handle("get-whatsapp-preload-path", () => {
+  // Every invoke channel serves the app's own UI. WhatsApp pages only use the
+  // send channels below (zoom, open-link, message-count), which check their
+  // sender themselves.
+  const handle = (
+    channel: string,
+    listener: Parameters<typeof ipcMain.handle>[1]
+  ) =>
+    ipcMain.handle(channel, (event, ...args) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error(`Unauthorized IPC sender for ${channel}`);
+      }
+      return listener(event, ...args);
+    });
+
+  handle("get-whatsapp-preload-path", () => {
     // @ts-expect-error ImportMeta works correctly
     return import.meta.url.replace("main.js", "whatsapp.preload.js");
   });
 
-  ipcMain.handle("settings-store-get", () => {
+  handle("settings-store-get", () => {
     return electronSettingsStore.store;
   });
 
-  ipcMain.handle(
+  handle(
     "settings-store-set",
     (event, key: SettingKey, value: unknown) => {
       if (event.sender !== mainWindow.webContents) throw new Error("Unauthorized settings sender");
@@ -466,11 +519,11 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     }
   );
 
-  ipcMain.handle("tab-store-get", () => {
+  handle("tab-store-get", () => {
     return electronTabStore.store;
   });
 
-  ipcMain.handle(
+  handle(
     "tab-store-set",
     (event, key: keyof TabStore, value: unknown) => {
       if (event.sender !== mainWindow.webContents) throw new Error("Unauthorized tab sender");
@@ -480,11 +533,11 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     }
   );
 
-  ipcMain.handle("theme-store-get", () => {
+  handle("theme-store-get", () => {
     return electronThemeStore.store;
   });
 
-  ipcMain.handle(
+  handle(
     "theme-store-set",
     (event, key: keyof ThemeStore, value: unknown) => {
       if (event.sender !== mainWindow.webContents || key !== "themes") throw new Error("Unauthorized theme store update");
@@ -493,7 +546,7 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     }
   );
 
-  ipcMain.handle("init-permission-handler", (event, partitionId: unknown) => {
+  handle("init-permission-handler", (event, partitionId: unknown) => {
     if (event.sender !== mainWindow.webContents || !isAltusPartition(partitionId)) {
       throw new Error("Unauthorized session partition");
     }
@@ -510,7 +563,7 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
       });
   });
 
-  ipcMain.handle(
+  handle(
     "toggle-notifications",
     (event, enabled: boolean, partitionId: string) => {
       if (event.sender !== mainWindow.webContents || !isAltusPartition(partitionId) || typeof enabled !== "boolean") {
@@ -524,7 +577,7 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     }
   );
 
-  ipcMain.handle(
+  handle(
     "toggle-media-permission",
     (event, enabled: boolean, partitionId: string) => {
       if (event.sender !== mainWindow.webContents || !isAltusPartition(partitionId) || typeof enabled !== "boolean") {
@@ -545,21 +598,21 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     void shell.openExternal(url).catch((error) => console.error("Failed to open external URL:", error));
   });
 
-  ipcMain.handle(
+  handle(
     "show-message-box",
     (_event, options: Electron.MessageBoxOptions) => {
       return dialog.showMessageBox(options);
     }
   );
 
-  ipcMain.handle("get-app-menu", () => {
+  handle("get-app-menu", () => {
     const menu = Menu.getApplicationMenu();
     if (!menu) return;
     const cloneableMenu = getCloneableMenu(menu);
     return cloneableMenu;
   });
 
-  ipcMain.handle("menu-item-click", (_event, id: string) => {
+  handle("menu-item-click", (_event, id: string) => {
     const menu = Menu.getApplicationMenu();
     if (!menu) return;
     const item = menu.getMenuItemById(id);
@@ -570,27 +623,27 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
     item.click(undefined, focusedWindow, focusedWebContents);
   });
 
-  ipcMain.handle("minimize-window", () => {
+  handle("minimize-window", () => {
     mainWindow.minimize();
   });
 
-  ipcMain.handle("maximize-window", () => {
+  handle("maximize-window", () => {
     mainWindow.maximize();
   });
 
-  ipcMain.handle("restore-window", () => {
+  handle("restore-window", () => {
     mainWindow.restore();
   });
 
-  ipcMain.handle("close-window", () => {
+  handle("close-window", () => {
     mainWindow.close();
   });
 
-  ipcMain.handle("is-maximized", () => {
+  handle("is-maximized", () => {
     return mainWindow.isMaximized();
   });
 
-  ipcMain.handle("is-blurred", () => {
+  handle("is-blurred", () => {
     return !mainWindow.isFocused();
   });
 
