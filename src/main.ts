@@ -18,10 +18,17 @@ import { Tab, TabStore } from "./stores/tabs/common";
 import { electronThemeStore } from "./stores/themes/electron";
 import { ThemeStore } from "./stores/themes/common";
 import { electronSettingsStore } from "./stores/settings/electron";
-import { languages } from "./i18n/langauges.config";
+import {
+  fallbackLanguage,
+  isSupportedLanguage,
+  languageNames,
+  languages,
+  type Language,
+} from "./i18n/langauges.config";
 import os from "os";
 import Store from "electron-store";
 import { electronI18N } from "./i18n/electron";
+import { contextMenuLabelKeys } from "./i18n/contextMenuLabels";
 import {
   DefaultSettingValues,
   SettingKey,
@@ -373,30 +380,31 @@ if (!singleInstanceLock) {
         } as unknown as BrowserWindow,
         showSaveImageAs: true,
         showInspectElement: true,
+        labels: localizedContextMenuLabels,
         append: (def, params, window) => [
           {
-            label: "Bold",
+            label: electronI18N.t("Bold"),
             visible: params.isEditable,
             click: () => {
               (window as BrowserWindow).webContents.send("format-text", "*");
             },
           },
           {
-            label: "Italic",
+            label: electronI18N.t("Italic"),
             visible: params.isEditable,
             click: () => {
               (window as BrowserWindow).webContents.send("format-text", "_");
             },
           },
           {
-            label: "Strike",
+            label: electronI18N.t("Strike"),
             visible: params.isEditable,
             click: () => {
               (window as BrowserWindow).webContents.send("format-text", "~");
             },
           },
           {
-            label: "Monospaced",
+            label: electronI18N.t("Monospaced"),
             visible: params.isEditable,
             click: () => {
               (window as BrowserWindow).webContents.send("format-text", "```");
@@ -432,6 +440,18 @@ if (!singleInstanceLock) {
     });
   });
 }
+
+// electron-context-menu reads these each time a menu opens, so the getters
+// follow the current language.
+const localizedContextMenuLabels = Object.defineProperties(
+  {},
+  Object.fromEntries(
+    Object.entries(contextMenuLabelKeys).map(([id, key]) => [
+      id,
+      { enumerable: true, get: () => electronI18N.t(key) },
+    ])
+  )
+) as Record<keyof typeof contextMenuLabelKeys, string>;
 
 function handleWhatsappLinks(argv: string[]) {
   const arg = argv.find((arg) => arg.includes("whatsapp"));
@@ -567,6 +587,10 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
         changeAutoHideMenuBar(mainWindow, value as boolean);
       } else if (key === "trayIcon") {
         toggleTray(mainWindow, value as boolean);
+      } else if (key === "language") {
+        // Saves the setting and relabels the menus, tray and window.
+        electronI18N.setLanguage(value as Language);
+        return;
       }
       return electronSettingsStore.set(key, { value });
     }
@@ -824,6 +848,12 @@ async function initializeI18N(mainWindow: BrowserWindow) {
   electronI18N.setLanguageLoadedCallback(() => {
     const menu = getLocalizedMainMenu();
     Menu.setApplicationMenu(menu);
+    if (tray && !tray.isDestroyed()) {
+      tray.setContextMenu(getLocalizedTrayMenu());
+    }
+    if (process.platform === "darwin" && tray) {
+      app.dock?.setMenu(getLocalizedTrayMenu());
+    }
     mainWindow.webContents.send("reload-custom-title-bar");
     mainWindow.webContents.send("reload-translations");
   });
@@ -831,8 +861,10 @@ async function initializeI18N(mainWindow: BrowserWindow) {
   try {
     await electronI18N.initialize();
 
-    const initialLanguage = getSettingWithDefault("language");
-    electronI18N.setLanguage(initialLanguage);
+    const savedLanguage = getSettingWithDefault("language");
+    electronI18N.setLanguage(
+      isSupportedLanguage(savedLanguage) ? savedLanguage : fallbackLanguage
+    );
   } catch (error) {
     console.error(error);
   }
@@ -923,7 +955,7 @@ function getLocalizedMainMenu() {
           label: electronI18N.t("Language"),
           submenu: languages.map((lang) => {
             return {
-              label: electronI18N.t(lang),
+              label: languageNames[lang],
               type: "radio",
               checked: electronI18N.getLanguage() === lang,
               click: () => {

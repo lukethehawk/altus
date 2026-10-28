@@ -5,6 +5,11 @@ import { getSettingValue, setSettingValue } from "../stores/settings/solid";
 import { StyledSwitch } from "./StyledSwitch";
 import StyledSelect from "./StyledSelect";
 import { I18NContext } from "../i18n/solid";
+import {
+  type Language,
+  languageNames,
+  languages,
+} from "../i18n/langauges.config";
 
 const SettingsDialog: Component<{
   isOpen: Accessor<boolean>;
@@ -36,6 +41,30 @@ const SettingsDialog: Component<{
               </Dialog.CloseButton>
             </div>
             <Dialog.Description class="overflow-y-auto">
+              <div class="py-2.5">
+                <StyledSelect
+                  rootClass="items-start justify-between"
+                  triggerClass="min-w-[15ch]"
+                  multiple={false}
+                  label={
+                    <div class="flex flex-col gap-1.5">
+                      <div class="font-semibold">{t("Language")}</div>
+                      <div class="text-zinc-300 max-w-[30ch] leading-snug text-sm">
+                        {t("languageDescription")}
+                      </div>
+                    </div>
+                  }
+                  options={[...languages]}
+                  value={getSettingValue("language")}
+                  onChange={(language) => {
+                    if (language) setSettingValue("language", language);
+                  }}
+                  valueRender={(state) =>
+                    languageNames[state.selectedOption() as Language]
+                  }
+                  itemLabelRender={(item) => languageNames[item.rawValue]}
+                />
+              </div>
               <div class="py-2.5">
                 <StyledSwitch
                   checked={getSettingValue("trayIcon")}
@@ -123,8 +152,8 @@ const SettingsDialog: Component<{
                       position as "top" | "bottom"
                     );
                   }}
-                  valueRender={(state) => state.selectedOption()}
-                  itemLabelRender={(item) => item.rawValue}
+                  valueRender={(state) => t(state.selectedOption() as string)}
+                  itemLabelRender={(item) => t(item.rawValue)}
                 />
               </div>
               <div class="py-2.5">

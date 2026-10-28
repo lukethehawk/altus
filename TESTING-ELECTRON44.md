@@ -88,6 +88,10 @@ logged in.
     then offers "Restart now / Later". "Restart now" installs silently and
     reopens the new version with accounts and settings intact; "Later"
     installs it when the app is quit from the tray or menu.
+11. **Language:** a new profile starts in English. Settings → Language →
+    Italiano switches menus, settings, tab dialogs, tray menu, the tab
+    right-click menu and the exit prompt at once, with no English left;
+    the choice survives a restart and English switches everything back.
 
 ### Packaged smoke run without touching your profile
 

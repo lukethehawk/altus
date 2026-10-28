@@ -230,6 +230,7 @@ const TabComponent: Component<TabComponentProps> = (props) => {
 };
 
 const TabsList: Component = () => {
+  const { t } = useContext(I18NContext);
   const [tabToEdit, setTabToEdit] = createSignal<Tab | null>(null);
   const canShowTabEditDialog = () => tabToEdit() !== null;
 
@@ -247,9 +248,9 @@ const TabsList: Component = () => {
     }
     const result = await window.showMessageBox({
       type: "question",
-      buttons: ["OK", "Cancel"],
-      title: "Close Tab",
-      message: "Are you sure you want to close the tab?",
+      buttons: ["OK", t("Cancel")],
+      title: t("Close Tab"),
+      message: t("Are you sure you want to close the tab?"),
     });
     if (result.response === 0) {
       removeTab(tab);
@@ -426,7 +427,7 @@ const TabsList: Component = () => {
           class="group flex items-center gap-2.5 bg-zinc-800 px-3 py-2 text-white text-sm leading-4 ui-selected:bg-zinc-700 hover:bg-zinc-600 select-none"
           onClick={addNewTab}
         >
-          <div class="sr-only">Add new tab</div>
+          <div class="sr-only">{t("Add New Tab")}</div>
           <CloseIcon class="w-4 h-4 rotate-45" />
         </button>
       </div>
