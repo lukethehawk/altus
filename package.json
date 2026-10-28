@@ -37,7 +37,7 @@
     "app-builder-lib": "^26.0.12",
     "autoprefixer": "^10.4.15",
     "dmg-builder": "^26.0.12",
-    "electron": "44.9.0",
+    "electron": "44.10.0",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.31.0",
     "postcss": "^8.5.3",
