@@ -64,7 +64,7 @@ load. That branch now ships only `.vite/` and `package.json` in `app.asar`
 |---|---|---|---|
 | Mitigation for compromised eMudhra intermediate certificates (high) | `electron@44.9.0`, fixed in 44.9.1 | Runtime TLS trust store used for every WhatsApp Web connection | **Fixed: Electron updated to 44.10.0** (`c550dcf`); no Electron advisory left in the re-run audit |
 | Several DoS / integer issues (high) | `nanoid@5.1.5` (direct) | Only called with constant sizes to create tab IDs; not fed remote input | **Fixed: lockfile bump to 5.1.16** (see the re-run below) |
-| Memory exhaustion on oversized constrained collections (high) | `zod@3.24.2` (direct) | Validates settings IPC from our own renderer; fix requires zod 4 (major) | Low priority; do not major-bump without a dedicated change |
+| Memory exhaustion on oversized constrained collections (high) | `zod@3.24.2` (direct) | Validates settings IPC from our own renderer; fix requires zod 4 (major) | **Fixed: zod 4.6.6** (Dependabot #21; schema covered by `tests/settings.test.mjs`) |
 | ReDoS with `$data` option (moderate) | `ajv@8.12.0` via `electron-store` → `conf` | Schema is ours and does not use `$data` | Not reachable |
 
 ### Build / packaging only — not shipped in the EXE
@@ -93,9 +93,10 @@ then each package's code was looked for in the built bundles
 | Package | Ships in the app? | Action |
 |---|---|---|
 | `nanoid` 5.1.5 / 3.3.6 | 5.x yes (tab and theme IDs, default generator only); 3.x via postcss, build only | Lockfile bump within the declared ranges: 5.1.16 and 3.3.20 |
-| `zod` 3.24.2 (GHSA-mrhx-c7xc-m3w5) | Yes | Not reachable: one `safeParse` per settings key, no array schemas, input only from the app's own window (sender-checked). Fix needs zod 4; ignored |
+| `zod` 3.24.2 (GHSA-mrhx-c7xc-m3w5) | Yes | Not reachable: one `safeParse` per settings key, no array schemas, input only from the app's own window (sender-checked). **Later fixed: zod 4.6.6**, no longer ignored |
 | `ajv` 8.12.0 (moderate) | Yes, via electron-store | `$data` not used; not reachable |
-| `brace-expansion`, `braces`, `minimatch`, `picomatch`, `postcss`, `source-map-js` | No (tailwindcss / postcss / sucrase / chokidar, CSS build) | Ignored |
+| `brace-expansion`, `braces`, `minimatch`, `picomatch`, `postcss` | No (tailwindcss / postcss / sucrase / chokidar, CSS build) | Ignored |
+| `source-map-js` 1.0.2 | No (postcss) | **Later fixed: 1.2.2** (Dependabot #22), no longer ignored |
 | `cross-spawn`, `glob` CLI, `http-cache-semantics`, `ip-address` | No (node-gyp / cacache / make-fetch-happen) | Ignored |
 | `electron` | Runtime | No advisories |
 
