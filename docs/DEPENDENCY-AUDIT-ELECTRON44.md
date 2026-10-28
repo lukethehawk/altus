@@ -28,6 +28,7 @@ yarn npm audit --all --recursive --environment all --json
 | production (`dependencies`) | 0 | 32 | 19 | 2 | 53 |
 | development (`devDependencies`) | 1 | 83 | 64 | 15 | 163 |
 | all (deduplicated) | 1 | 87 | 65 | 15 | 168 |
+| all, after Electron 44.10.0 | 1 | 86 | 65 | 15 | 167 |
 
 ## Why the production/development split is misleading here
 
@@ -46,16 +47,14 @@ yarn npm audit --all --recursive --environment all --json
 
 The triage below therefore classifies by **what code runs in the packaged app**.
 
-## Packaging finding (pre-existing, not changed here)
+## Packaging finding
 
-`resources/app` in the packaged build is **not an asar** and contains the
-whole repository (sources, `.github`, `tests`, configs) plus an 83-entry
-`node_modules` that includes dev tooling (`@babel`, `@eslint`,
-`@electron-forge`, `@xmldom`, …). The bundles do not load these files, so
-they are dead weight rather than an active attack surface, but they make the
-installer larger and the audit harder to reason about. Tightening
-`packagerConfig` (`asar`, `ignore`) changes how the app loads its files and
-must be done as its own tested change.
+Before `build/asar-packaging`, `resources/app` in the packaged build was
+**not an asar** and contained the whole repository (sources, `.github`,
+`tests`, configs) plus an 83-entry `node_modules` including dev tooling
+(`@babel`, `@eslint`, `@electron-forge`, `@xmldom`, …) that the bundles never
+load. That branch now ships only `.vite/` and `package.json` in `app.asar`
+(1.8 MB instead of 24 MB of loose files).
 
 ## Triage
 
@@ -63,7 +62,7 @@ must be done as its own tested change.
 
 | Advisory | Package | Reachability | Action |
 |---|---|---|---|
-| Mitigation for compromised eMudhra intermediate certificates (high) | `electron@44.9.0`, fixed in 44.9.1 | Runtime TLS trust store used for every WhatsApp Web connection | **Bump Electron to the latest 44.x patch in a separate, user-tested step** (44.10.0 / 44.9.3 available on 2026-10-28) |
+| Mitigation for compromised eMudhra intermediate certificates (high) | `electron@44.9.0`, fixed in 44.9.1 | Runtime TLS trust store used for every WhatsApp Web connection | **Fixed: Electron updated to 44.10.0** (`c550dcf`); no Electron advisory left in the re-run audit |
 | Several DoS / integer issues (high) | `nanoid@5.1.5` (direct) | Only called with constant sizes to create tab IDs; not fed remote input | Low priority; patch bump within `^5` when touching deps next |
 | Memory exhaustion on oversized constrained collections (high) | `zod@3.24.2` (direct) | Validates settings IPC from our own renderer; fix requires zod 4 (major) | Low priority; do not major-bump without a dedicated change |
 | ReDoS with `$data` option (moderate) | `ajv@8.12.0` via `electron-store` → `conf` | Schema is ours and does not use `$data` | Not reachable |

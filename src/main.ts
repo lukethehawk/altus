@@ -36,6 +36,7 @@ import {
   hasExplicitProfileDirectory,
 } from "./utils/isolation";
 import { getPartitionsToPrune } from "./utils/partitions";
+import { recoverRendererOnFailure } from "./utils/rendererRecovery";
 import { isAltusPartition, isTrustedWhatsAppURL, getSafeExternalHttpURL } from "./utils/security";
 import { SettingsSchema } from "./stores/settings/common";
 
@@ -159,6 +160,7 @@ function createWindow() {
   // The app UI is a local page: it never navigates away or opens windows.
   mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  recoverRendererOnFailure(mainWindow.webContents, "App window");
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -312,6 +314,8 @@ if (!singleInstanceLock) {
           .openExternal(externalURL)
           .catch((error) => console.error("Failed to open external URL:", error));
       });
+      // A crashed account reloads on its own without touching the others.
+      recoverRendererOnFailure(webContents, "WhatsApp tab");
 
       contextMenu({
         window: {
