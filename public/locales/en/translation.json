@@ -106,5 +106,7 @@
   "Exit": "Exit",
   "Cancel": "Cancel",
   "Are you sure you want to exit?": "Are you sure you want to exit?",
-  "Pick color": "Pick color"
+  "Pick color": "Pick color",
+  "Attachment saved": "Attachment saved",
+  "Show in folder": "Show in folder"
 }

@@ -14,6 +14,7 @@ import { getSettingValue } from "./stores/settings/solid";
 import CustomTitlebar from "./components/CustomTitlebar";
 import { I18NProvider } from "./i18n/solid";
 import ThemeManagerDialog from "./components/ThemeManagerDialog";
+import DownloadToast from "./components/DownloadToast";
 
 const App: Component = () => {
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false);
@@ -75,6 +76,7 @@ const App: Component = () => {
           isOpen={isThemeManagerOpen}
           setIsOpen={setIsThemeManagerOpen}
         />
+        <DownloadToast />
       </div>
     </I18NProvider>
   );

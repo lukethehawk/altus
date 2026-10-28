@@ -123,7 +123,19 @@ const ipcHandlers: ElectronIPCHandlers = {
     ipcRenderer.on("message-count", handler);
     return () => ipcRenderer.off("message-count", handler);
   },
+  onDownloadCompleted: (callback) => {
+    const handler = (
+      _: IpcRendererEvent,
+      download: { id: number; filename: string }
+    ) => callback(download);
+    ipcRenderer.on("download-completed", handler);
+    return () => ipcRenderer.off("download-completed", handler);
+  },
 };
+
+contextBridge.exposeInMainWorld("showDownloadInFolder", (id: number) =>
+  ipcRenderer.invoke("show-download-in-folder", id)
+);
 
 contextBridge.exposeInMainWorld("electronIPCHandlers", ipcHandlers);
 

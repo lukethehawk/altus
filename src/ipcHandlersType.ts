@@ -17,4 +17,7 @@ export type ElectronIPCHandlers = {
   onMessageCount: (
     callback: (detail: { messageCount: number; tabId: string }) => void
   ) => () => void;
+  onDownloadCompleted: (
+    callback: (download: { id: number; filename: string }) => void
+  ) => () => void;
 };

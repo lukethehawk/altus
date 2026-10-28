@@ -70,6 +70,12 @@ function getSettingWithDefault<Key extends SettingKey>(
 
 let tray: Tray | undefined;
 
+// Recently completed downloads by id: the UI asks to reveal an id, so a file
+// path never travels back from the renderer to the main process.
+const completedDownloads = new Map<number, string>();
+const MAX_TRACKED_DOWNLOADS = 20;
+let nextDownloadId = 1;
+
 const iconsPath = path.join(__dirname, "assets", "icons");
 
 const mainIcon = nativeImage.createFromPath(
@@ -277,6 +283,18 @@ if (!singleInstanceLock) {
     electronDl({
       saveAs: getSettingWithDefault("showSaveDialog"),
       directory: defaultDownloadDir ? defaultDownloadDir : undefined,
+      onCompleted: (file) => {
+        const id = nextDownloadId++;
+        completedDownloads.set(id, file.path);
+        if (completedDownloads.size > MAX_TRACKED_DOWNLOADS) {
+          completedDownloads.delete(id - MAX_TRACKED_DOWNLOADS);
+        }
+        if (mainWindow.isDestroyed()) return;
+        mainWindow.webContents.send("download-completed", {
+          id,
+          filename: file.filename,
+        });
+      },
     });
 
     initializeI18N(mainWindow).then(() => {
@@ -608,6 +626,19 @@ function addIPCHandlers(mainWindow: BrowserWindow) {
       return dialog.showMessageBox(options);
     }
   );
+
+  handle("show-download-in-folder", (_event, id: unknown) => {
+    const filePath =
+      typeof id === "number" ? completedDownloads.get(id) : undefined;
+    if (!filePath) return;
+    if (fs.existsSync(filePath)) {
+      shell.showItemInFolder(filePath);
+      return;
+    }
+    // The file was moved or deleted meanwhile: open its folder if it is left.
+    const directory = path.dirname(filePath);
+    if (fs.existsSync(directory)) void shell.openPath(directory);
+  });
 
   handle("get-app-menu", () => {
     const menu = Menu.getApplicationMenu();
