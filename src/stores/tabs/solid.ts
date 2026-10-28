@@ -57,18 +57,26 @@ const updateAndSyncTabStore: SetStoreFunction<TabStore> = (
 ) => {
   // @ts-expect-error Difficult to type, but works correctly
   _updateTabStore(...args);
-  syncElectronTabStore();
+  // Persist only the top-level field that changed. Switching accounts used
+  // to rewrite the entire tabs array and the other two fields every time.
+  const key = args[0];
+  const changedKey =
+    key === "tabs" || key === "selectedTabId" || key === "previouslyClosedTab"
+      ? key
+      : undefined;
+  syncElectronTabStore(changedKey);
 };
 
-function syncElectronTabStore() {
-  const tabs = unwrap(tabStore.tabs);
-  window.electronTabStore.set("tabs", tabs);
-
-  const selectedTabId = unwrap(tabStore.selectedTabId);
-  window.electronTabStore.set("selectedTabId", selectedTabId);
-
-  const previouslyClosedTab = unwrap(tabStore.previouslyClosedTab);
-  window.electronTabStore.set("previouslyClosedTab", previouslyClosedTab);
+function syncElectronTabStore(changedKey?: keyof TabStore) {
+  if (!changedKey || changedKey === "tabs") {
+    window.electronTabStore.set("tabs", unwrap(tabStore.tabs));
+  }
+  if (!changedKey || changedKey === "selectedTabId") {
+    window.electronTabStore.set("selectedTabId", unwrap(tabStore.selectedTabId));
+  }
+  if (!changedKey || changedKey === "previouslyClosedTab") {
+    window.electronTabStore.set("previouslyClosedTab", unwrap(tabStore.previouslyClosedTab));
+  }
 }
 
 export function addTab(tab: Tab) {
