@@ -2246,9 +2246,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"altus-electron44-test@workspace:.":
+"altus-plus@workspace:.":
   version: 0.0.0-use.local
-  resolution: "altus-electron44-test@workspace:."
+  resolution: "altus-plus@workspace:."
   dependencies:
     "@electron-forge/cli": "npm:^7.8.0"
     "@electron-forge/maker-base": "npm:^7.8.0"

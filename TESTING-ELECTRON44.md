@@ -1,24 +1,35 @@
-# Altus Electron 44 Test (isolated experiment)
+# Altus + (Electron 44 fork)
 
-**Do not install this over your daily-use Altus.** This branch has an independent
-Windows installer identity, app title, autostart name and Electron user-data path.
+Altus + installs and runs next to official Altus: it has its own Windows
+installer identity, app title, autostart name and Electron user-data path, and
+never reads or changes official Altus's sessions.
 
-| Setting | Official Altus | Test build |
+| Setting | Official Altus | Altus + |
 |---|---|---|
-| Product name | Altus | Altus Electron 44 Test |
-| App ID | harwara.aman.altus | com.lukethehawk.altus.electron44test |
+| Product name | Altus | Altus + |
+| App ID | harwara.aman.altus | com.lukethehawk.altusplus |
 | Windows data directory | Usually `%APPDATA%\\Altus` | `%APPDATA%\\Altus Electron 44 Test` |
 | whatsapp:// registration | Optional | **Disabled** |
 | Electron | 35.1.5 | 44.10.0 |
 
-The test build uses **new WhatsApp Web partitions**: expect to pair WhatsApp again
-with a QR code or phone linking. It will not copy or migrate your original sessions.
+The data directory keeps the name of the earlier "Altus Electron 44 Test"
+builds, so accounts paired there stay logged in. A first install pairs new
+WhatsApp Web sessions; nothing is copied from official Altus.
+
+### Moving from "Altus Electron 44 Test" to Altus +
+
+1. Quit the test build from the tray (both apps share the profile, so only
+   one can run).
+2. Install Altus +: the accounts are already there.
+3. Uninstall "Altus Electron 44 Test" from Windows settings. Its uninstaller
+   does not delete `%APPDATA%\\Altus Electron 44 Test`, and Altus + removes the
+   test build's autostart entry on its first start.
 
 ## Build and installation on Windows
 
-In GitHub Actions, find the **Electron 44 isolated Windows build** workflow on
-this branch and download the `Altus-Electron44-Test-Windows` artifact from a
-successful run. Extract the ZIP and launch the contained installer.
+In GitHub Actions, open a successful **Altus + Windows installer** run on
+`master` and download the `Altus-Plus-Windows` artifact. Extract the ZIP and
+launch the contained installer.
 
 Or locally, using Node.js 22 and Corepack:
 
@@ -29,12 +40,12 @@ yarn lint
 yarn make -p win32
 ```
 
-Verify the resulting installer/window says **Altus Electron 44 Test** before
+Verify the resulting installer/window says **Altus +** before
 signing in. Windows SmartScreen may warn about unsigned binaries.
 
 ## Smoke tests
 
-1. Launch original Altus and test variant side by side; confirm their accounts and settings differ.
+1. Launch official Altus and Altus + side by side; confirm their accounts and settings differ.
 2. Pair a test WhatsApp account and verify it stays connected after closing/reopening.
 3. Test download/upload, external links, clipboard copy/paste, media permissions,
    two accounts, notifications and close-to-tray.
@@ -43,7 +54,7 @@ signing in. Windows SmartScreen may warn about unsigned binaries.
 
 ## Regression checks for the hardening branches
 
-Installing a newer test build over an existing one keeps the same
+Installing a newer Altus + build over an existing one keeps the same
 `%APPDATA%\\Altus Electron 44 Test` profile, so paired accounts should stay
 logged in.
 
@@ -56,7 +67,7 @@ logged in.
    WhatsApp Web. Downloads, uploads, image previews and copy/paste still work.
 4. **Reopen closed tab:** close a tab, use "Restore closed tab": the account
    is still logged in.
-5. **Crash recovery:** in Task Manager end one of the "Altus Electron 44 Test"
+5. **Crash recovery:** in Task Manager end one of the "Altus +"
    renderer processes. The affected tab (or the whole window, if that
    renderer was the app UI) reloads within a few seconds on its own and stays
    logged in; other accounts are not reloaded.
@@ -80,7 +91,7 @@ so a build can be checked on a throwaway profile. Keep the path short:
 Chromium's CacheStorage fails beyond Windows' 260-character path limit.
 
 ```powershell
-& ".\out\Altus Electron 44 Test-win32-x64\Altus Electron 44 Test.exe" --user-data-dir="$env:TEMP\altus-smoke"
+& ".\out\Altus +-win32-x64\Altus +.exe" --user-data-dir="$env:TEMP\altus-smoke"
 ```
 
 Only use this branch for evaluation. Do not merge it into `master` until
