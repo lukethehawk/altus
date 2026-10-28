@@ -108,5 +108,10 @@
   "Are you sure you want to exit?": "Are you sure you want to exit?",
   "Pick color": "Pick color",
   "Attachment saved": "Attachment saved",
-  "Show in folder": "Show in folder"
+  "Show in folder": "Show in folder",
+  "Notifications muted": "Notifications muted",
+  "Mute notifications for 1 hour": "Mute notifications for 1 hour",
+  "Mute notifications for 8 hours": "Mute notifications for 8 hours",
+  "Mute notifications until turned back on": "Mute notifications until turned back on",
+  "Unmute notifications": "Unmute notifications"
 }

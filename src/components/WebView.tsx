@@ -62,6 +62,16 @@ const WebView: Component<{ tab: Tab }> = (props) => {
     webviewRef.send("set-id", props.tab.id);
   });
 
+  createEffect(() => {
+    if (!webviewRef) return;
+    if (!didStopLoading()) return;
+
+    webviewRef.send("notification-config", {
+      accountName: props.tab.name,
+      mutedUntil: props.tab.config.notificationsMutedUntil ?? 0,
+    });
+  });
+
   onMount(() => {
     const webview = webviewRef;
 
