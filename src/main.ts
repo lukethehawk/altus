@@ -7,6 +7,7 @@ import {
   Menu,
   MenuItem,
   nativeImage,
+  net,
   session,
   shell,
   Tray,
@@ -38,6 +39,12 @@ import {
 } from "./utils/isolation";
 import { getPartitionsToPrune } from "./utils/partitions";
 import { recoverRendererOnFailure } from "./utils/rendererRecovery";
+import {
+  LATEST_RELEASE_API_URL,
+  REPOSITORY_URL,
+  compareVersions,
+  parseLatestRelease,
+} from "./utils/updates";
 import { isAltusPartition, isTrustedWhatsAppURL, getSafeExternalHttpURL } from "./utils/security";
 import { SettingsSchema } from "./stores/settings/common";
 
@@ -305,6 +312,12 @@ if (!singleInstanceLock) {
 
     initializeI18N(mainWindow).then(() => {
       toggleTray(mainWindow, getSettingWithDefault("trayIcon"));
+      // Give the accounts time to load before possibly showing a dialog.
+      if (getSettingWithDefault("checkForUpdates")) {
+        setTimeout(() => {
+          void checkForUpdates({ interactive: false });
+        }, 20_000);
+      }
     });
 
     addIPCHandlers(mainWindow);
@@ -822,8 +835,61 @@ OS: ${os.type()} ${os.arch()} ${os.release()}`;
 const aboutDialogText = `With help from: MarceloZapatta, Dafnik, dmcdo, insign, srevinsaju, maicol07, ngmoviedo.
 
 Thanks to: vednoc for Dark WhatsApp theme.
-  
+
 ${versionInfo}`;
+
+/**
+ * Look up the latest GitHub release. Nothing is downloaded or installed: the
+ * user is pointed to the release page. Silent on startup unless an update
+ * exists; the menu entry (interactive) also reports "up to date" and errors.
+ */
+async function checkForUpdates({ interactive }: { interactive: boolean }) {
+  const t = (key: string) => electronI18N.t(key);
+  let latest: ReturnType<typeof parseLatestRelease> = null;
+  try {
+    const response = await net.fetch(LATEST_RELEASE_API_URL, {
+      headers: { Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    latest = parseLatestRelease(await response.json());
+    if (!latest) throw new Error("Unexpected release data");
+  } catch (error) {
+    console.warn("Update check failed", error);
+    if (interactive) {
+      await dialog.showMessageBox({
+        type: "warning",
+        message: t("Could not check for updates"),
+        detail: `${t("Try again later or open the releases page.")}\n\n${String(error)}`,
+        buttons: [t("Open Releases Page"), "OK"],
+      }).then(({ response }) => {
+        if (response === 0) void shell.openExternal(`${REPOSITORY_URL}/releases`);
+      });
+    }
+    return;
+  }
+
+  const current = app.getVersion();
+  if ((compareVersions(latest.version, current) ?? 0) > 0) {
+    const { response } = await dialog.showMessageBox({
+      type: "info",
+      message: `${t("A new version is available")}: ${APP_NAME} ${latest.version}`,
+      detail: `${t("Installed version")}: ${current}`,
+      icon: mainIcon,
+      buttons: [t("Download"), t("Later")],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response === 0) void shell.openExternal(latest.url);
+  } else if (interactive) {
+    await dialog.showMessageBox({
+      type: "info",
+      message: t("You are using the latest version"),
+      detail: `${APP_NAME} ${current}`,
+      icon: mainIcon,
+    });
+  }
+}
 
 function getLocalizedMainMenu() {
   const menuTemplate: (
@@ -1040,15 +1106,27 @@ function getLocalizedMainMenu() {
               .showMessageBox({
                 type: "info",
                 title: `${APP_NAME} v${app.getVersion()}`,
-                message: `Made by Aman Harwara.`,
-                detail: aboutDialogText,
+                message: `${APP_NAME} ${app.getVersion()}`,
+                detail: `${electronI18N.t("Maintained by lukethehawk. Fork of Altus by Aman Harwara.")}
+${REPOSITORY_URL}
+
+${aboutDialogText}`,
                 icon: mainIcon,
-                buttons: ["Copy Version Info", "OK"],
+                buttons: [
+                  electronI18N.t("Open GitHub"),
+                  electronI18N.t("Copy Version Info"),
+                  "OK",
+                ],
+                defaultId: 2,
+                cancelId: 2,
               })
               .then((res) => {
                 const buttonClicked = res.response;
                 switch (buttonClicked) {
                   case 0:
+                    void shell.openExternal(REPOSITORY_URL);
+                    break;
+                  case 1:
                     void clipboard.writeText(versionInfo).catch(console.error);
                     break;
                 }
@@ -1063,20 +1141,7 @@ function getLocalizedMainMenu() {
           label: electronI18N.t("Check For &Updates"),
           accelerator: "CmdOrCtrl+Shift+U",
           click() {
-            dialog
-              .showMessageBox({
-                type: "question",
-                message: "Check for Updates?",
-                detail: `Current version: v${app.getVersion()}`,
-                buttons: ["Yes", "No"],
-              })
-              .then((res) => {
-                const buttonClicked = res.response;
-                if (buttonClicked === 0) {
-                  // checkUpdates().catch((err) => console.error(err));
-                }
-              })
-              .catch((err) => console.error(err));
+            checkForUpdates({ interactive: true }).catch(console.error);
           },
           id: "check-for-updates",
         },
@@ -1084,27 +1149,32 @@ function getLocalizedMainMenu() {
           label: electronI18N.t("Links"),
           submenu: [
             {
+              label: electronI18N.t("Repository"),
+              click: () => {
+                void shell.openExternal(REPOSITORY_URL);
+              },
+              id: "repository",
+            },
+            {
+              label: electronI18N.t("Releases"),
+              click: () => {
+                void shell.openExternal(`${REPOSITORY_URL}/releases`);
+              },
+              id: "releases",
+            },
+            {
               label: electronI18N.t("Report Bugs/Issues"),
               click: () => {
-                shell.openExternal(
-                  "https://gitlab.com/amanharwara/altus/-/issues"
-                );
+                void shell.openExternal(`${REPOSITORY_URL}/issues`);
               },
               id: "report-bugs-issues",
             },
             {
-              label: electronI18N.t("Website"),
+              label: electronI18N.t("Original Altus project"),
               click: () => {
-                shell.openExternal("https://amanharwara.com");
+                void shell.openExternal("https://github.com/amanharwara/altus");
               },
-              id: "website",
-            },
-            {
-              label: electronI18N.t("Repository"),
-              click: () => {
-                shell.openExternal("https://www.github.com/amanharwara/altus");
-              },
-              id: "repository",
+              id: "original-project",
             },
           ],
         },
