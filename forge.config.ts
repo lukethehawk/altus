@@ -10,6 +10,12 @@ const config: ForgeConfig = {
     appBundleId: "com.lukethehawk.altus.electron44test",
     appCategoryType: "public.app-category.social-networking",
     // No whatsapp:// protocol registration in the isolated test build.
+    asar: true,
+    // The Vite bundles in .vite/ inline every runtime dependency; this
+    // plugin-vite version does not prune the app folder by itself, so ship
+    // only the bundles and package.json instead of sources and node_modules.
+    ignore: (file: string) =>
+      !!file && file !== "/package.json" && !file.startsWith("/.vite"),
   },
   rebuildConfig: {},
   makers: [new MakerAppImage(), new MakerDMG(), new MakerNSIS()],
