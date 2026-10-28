@@ -32,6 +32,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Altus-Plus-Windows
-          path: out/make/**/*.exe
+          path: |
+            out/make/**/*.exe
+            out/make/**/*.blockmap
+            out/make/**/latest.yml
           if-no-files-found: error
           retention-days: 90

@@ -1,0 +1,6 @@
+# Read by electron-updater from the packaged app's resources folder
+# (forge.config.ts extraResource). The Forge build does not generate it.
+provider: github
+owner: lukethehawk
+repo: altus
+updaterCacheDirName: altus-plus-updater

@@ -3,6 +3,8 @@
 // whether you're running in development or production).
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
+// Generic update feed URL for local update tests (vite.main.config.ts); "" in releases.
+declare const ALTUS_TEST_UPDATE_FEED: string;
 
 // vite import meta env
 interface ImportMeta {

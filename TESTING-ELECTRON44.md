@@ -83,6 +83,11 @@ logged in.
    that account shows a crossed bell and no desktop notifications, while
    unread counts still update and the other accounts still notify.
    "Unmute notifications" restores them; timed mutes expire on their own.
+10. **In-app update:** with a newer release published (see
+    `docs/RELEASING.md`), Help → Check for Updates says it is downloading,
+    then offers "Restart now / Later". "Restart now" installs silently and
+    reopens the new version with accounts and settings intact; "Later"
+    installs it when the app is quit from the tray or menu.
 
 ### Packaged smoke run without touching your profile
 
