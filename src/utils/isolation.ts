@@ -11,7 +11,12 @@ let configured = false;
 
 export function ensureIsolatedProfile(): void {
   if (configured) return;
-  const directory = path.join(app.getPath("appData"), EXPERIMENT_NAME);
+  // An explicit --user-data-dir (used for smoke tests) wins, so a test run
+  // never opens the profile holding the real WhatsApp sessions.
+  const explicitDirectory = app.commandLine.getSwitchValue("user-data-dir");
+  const directory = explicitDirectory
+    ? path.resolve(explicitDirectory)
+    : path.join(app.getPath("appData"), EXPERIMENT_NAME);
   fs.mkdirSync(directory, { recursive: true });
   app.setName(EXPERIMENT_NAME);
   app.setPath("userData", directory);
