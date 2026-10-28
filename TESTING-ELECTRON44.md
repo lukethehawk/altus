@@ -61,6 +61,10 @@ logged in.
    renderer was the app UI) reloads within a few seconds on its own and stays
    logged in; other accounts are not reloaded.
 6. Autostart on/off in settings still applies after a restart.
+7. **Download notice:** download an attachment; "Attachment saved / Show in
+   folder" appears for a few seconds and the button opens Explorer with the
+   file selected. With "Show save dialog" on (the default) it appears after
+   the file is saved.
 
 ### Packaged smoke run without touching your profile
 

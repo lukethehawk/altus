@@ -1,7 +1,7 @@
 {
   "name": "altus-electron44-test",
   "productName": "Altus Electron 44 Test",
-  "version": "5.8.1-electron44.1",
+  "version": "5.8.1-electron44.2",
   "description": "Desktop client for WhatsApp Web with themes & multiple account support.",
   "main": ".vite/build/main.js",
   "build": {
