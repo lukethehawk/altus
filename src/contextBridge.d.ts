@@ -41,6 +41,7 @@ declare global {
       keyMissing: (key: string) => Promise<void>;
     };
     clickMenuItem: (id: string) => Promise<void>;
+    showDownloadInFolder: (id: number) => Promise<void>;
     platform: NodeJS.Platform;
   }
 }
