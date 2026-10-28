@@ -1,7 +1,7 @@
 import { Configuration } from "app-builder-lib";
 
 export const CommonConfig: Partial<Configuration> = {
-  appId: "com.lukethehawk.altus.electron44test",
-  productName: "Altus Electron 44 Test",
+  appId: "com.lukethehawk.altusplus",
+  productName: "Altus +",
   // Deliberately do not register the whatsapp:// protocol.
 };

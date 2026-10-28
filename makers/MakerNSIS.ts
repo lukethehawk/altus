@@ -52,7 +52,7 @@ export default class MakerNSIS extends MakerBase<MakerOptions> {
               "assets",
               "installerSidebar.bmp"
             ),
-            artifactName: "${productName}-Setup-${version}.${ext}",
+            artifactName: "Altus-Plus-Setup-${version}.${ext}",
             allowToChangeInstallationDirectory: true,
           },
           publish: null,

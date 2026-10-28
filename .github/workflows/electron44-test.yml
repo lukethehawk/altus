@@ -1,10 +1,10 @@
-name: Electron 44 isolated Windows build
+name: Altus + Windows installer
 
 on:
   push:
     branches:
-      - experiment/electron44-isolated
-      - security/electron44-deps-refresh
+      - master
+      - release/altus-plus
   workflow_dispatch:
 
 permissions:
@@ -26,12 +26,12 @@ jobs:
         run: yarn lint
       - name: IPC security tests
         run: yarn test
-      - name: Package isolated Windows installer
+      - name: Package Windows installer
         run: yarn make -p win32
-      - name: Downloadable Windows test installer
+      - name: Downloadable Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: Altus-Electron44-Test-Windows
+          name: Altus-Plus-Windows
           path: out/make/**/*.exe
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90

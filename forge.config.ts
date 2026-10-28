@@ -7,9 +7,9 @@ import MakerDMG from "./makers/MakerDMG";
 const config: ForgeConfig = {
   packagerConfig: {
     icon: "./public/assets/icons/icon",
-    appBundleId: "com.lukethehawk.altus.electron44test",
+    appBundleId: "com.lukethehawk.altusplus",
     appCategoryType: "public.app-category.social-networking",
-    // No whatsapp:// protocol registration in the isolated test build.
+    // No whatsapp:// protocol registration, so official Altus keeps it.
     asar: true,
     // The Vite bundles in .vite/ inline every runtime dependency; this
     // plugin-vite version does not prune the app folder by itself, so ship

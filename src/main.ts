@@ -31,8 +31,9 @@ import AutoLaunch from "auto-launch";
 import electronDl from "electron-dl";
 import contextMenu from "electron-context-menu";
 import {
-  EXPERIMENT_APP_ID,
-  EXPERIMENT_NAME,
+  APP_ID,
+  APP_NAME,
+  LEGACY_TEST_BUILD_NAME,
   hasExplicitProfileDirectory,
 } from "./utils/isolation";
 import { getPartitionsToPrune } from "./utils/partitions";
@@ -136,7 +137,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       webviewTag: true,
     },
-    title: `${EXPERIMENT_NAME} ${app.getVersion()}`,
+    title: `${APP_NAME} ${app.getVersion()}`,
     show: false,
     frame: !useCustomTitlebar,
     titleBarStyle: useCustomTitlebar ? "hidden" : "default",
@@ -245,7 +246,7 @@ if (!singleInstanceLock) {
   });
 
   app.on("ready", () => {
-    if (process.platform === "win32") app.setAppUserModelId(EXPERIMENT_APP_ID);
+    if (process.platform === "win32") app.setAppUserModelId(APP_ID);
     const userAgentFallback = app.userAgentFallback;
     app.userAgentFallback = userAgentFallback.replace(
       /(Altus|Electron)([^\s]+\s)/g,
@@ -266,13 +267,18 @@ if (!singleInstanceLock) {
     // entry of the installed app, which shares the same name.
     if (!hasExplicitProfileDirectory()) {
       const autoLauncher = new AutoLaunch({
-        name: EXPERIMENT_NAME,
+        name: APP_NAME,
       });
       // disable() rejects when no entry exists yet; nothing to do then.
       (getSettingWithDefault("autoLaunch")
         ? autoLauncher.enable()
         : autoLauncher.disable()
       ).catch((error) => console.warn("Autostart update failed", error));
+      // The test builds registered autostart under their own name; drop that
+      // entry so the old executable is not launched next to this one.
+      new AutoLaunch({ name: LEGACY_TEST_BUILD_NAME })
+        .disable()
+        .catch(() => undefined);
     }
 
     const mainWindow = createWindow();
@@ -473,7 +479,7 @@ function toggleTray(mainWindow: BrowserWindow, enabled: boolean) {
         })
       : trayIcon
   );
-  tray.setToolTip(EXPERIMENT_NAME);
+  tray.setToolTip(APP_NAME);
   tray.setContextMenu(getLocalizedTrayMenu());
   tray.on("click", () => {
     if (process.platform !== "darwin") {
@@ -807,7 +813,7 @@ async function initializeI18N(mainWindow: BrowserWindow) {
   }
 }
 
-const versionInfo = `${EXPERIMENT_NAME}: ${app.getVersion()}
+const versionInfo = `${APP_NAME}: ${app.getVersion()}
 Electron: ${process.versions.electron}
 Chrome: ${process.versions.chrome}
 V8: ${process.versions.v8}
@@ -1033,7 +1039,7 @@ function getLocalizedMainMenu() {
             dialog
               .showMessageBox({
                 type: "info",
-                title: `${EXPERIMENT_NAME} v${app.getVersion()}`,
+                title: `${APP_NAME} v${app.getVersion()}`,
                 message: `Made by Aman Harwara.`,
                 detail: aboutDialogText,
                 icon: mainIcon,

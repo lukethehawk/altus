@@ -4,8 +4,13 @@ import path from "path";
 
 // Deliberately unique application identity to avoid reading or modifying
 // official Altus's saved WhatsApp sessions, window state, or settings.
-export const EXPERIMENT_NAME = "Altus Electron 44 Test";
-export const EXPERIMENT_APP_ID = "com.lukethehawk.altus.electron44test";
+export const APP_NAME = "Altus +";
+export const APP_ID = "com.lukethehawk.altusplus";
+// Name used by the earlier "Altus Electron 44 Test" builds. Their profile
+// folder is kept so accounts paired there stay logged in after the rename,
+// and their autostart entry is removed so only one entry starts the app.
+export const LEGACY_TEST_BUILD_NAME = "Altus Electron 44 Test";
+const PROFILE_FOLDER_NAME = LEGACY_TEST_BUILD_NAME;
 
 let configured = false;
 
@@ -20,9 +25,9 @@ export function ensureIsolatedProfile(): void {
   const explicitDirectory = app.commandLine.getSwitchValue("user-data-dir");
   const directory = explicitDirectory
     ? path.resolve(explicitDirectory)
-    : path.join(app.getPath("appData"), EXPERIMENT_NAME);
+    : path.join(app.getPath("appData"), PROFILE_FOLDER_NAME);
   fs.mkdirSync(directory, { recursive: true });
-  app.setName(EXPERIMENT_NAME);
+  app.setName(APP_NAME);
   app.setPath("userData", directory);
   configured = true;
 }
