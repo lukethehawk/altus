@@ -1,0 +1,45 @@
+name: Security audit
+
+# Weekly check of the dependency graph against the npm advisory database.
+# A failed run (GitHub emails the repository owner) means something new needs
+# triage; known advisories are listed in .yarnrc.yml and explained in
+# docs/DEPENDENCY-AUDIT-ELECTRON44.md.
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable Yarn
+        run: corepack enable
+      - name: Install dependencies
+        run: yarn install --immutable --mode=skip-build
+      - name: App dependencies (new high or critical advisories)
+        run: yarn npm audit --all --recursive --environment production --severity high
+      - name: Electron runtime (any advisory)
+        if: ${{ !cancelled() }}
+        run: |
+          yarn npm audit --all --recursive --severity low --json > electron-audit.jsonl || true
+          node .github/scripts/check-electron-advisories.mjs < electron-audit.jsonl
+      - name: Full report (informational)
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '## Full dependency audit (all environments, moderate and above)'
+            echo
+            echo 'Build tooling included; see docs/DEPENDENCY-AUDIT-ELECTRON44.md for what ships in the app.'
+            echo
+            echo '```'
+            yarn npm audit --all --recursive --severity moderate || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
