@@ -1,0 +1,26 @@
+# Security updates only. Version updates are turned off
+# (open-pull-requests-limit: 0) so dependencies are never bumped in bulk;
+# security fixes still arrive as one grouped pull request per ecosystem, to be
+# reviewed and tested like any other change.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - '*'

@@ -1,5 +1,7 @@
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { VitePlugin } from "@electron-forge/plugin-vite";
+import { FusesPlugin } from "@electron-forge/plugin-fuses";
+import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import MakerAppImage from "./makers/MakerAppImage";
 import MakerNSIS from "./makers/MakerNSIS";
 import MakerDMG from "./makers/MakerDMG";
@@ -46,6 +48,25 @@ const config: ForgeConfig = {
           config: "vite.renderer.config.ts",
         },
       ],
+    }),
+    // Switches baked into the packaged executable (not used by `yarn start`).
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      // The exe cannot be reused as a Node.js runtime, or be given code
+      // through NODE_OPTIONS or a debugger, by another program.
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      // Refuse to start if app.asar was modified after the build, and never
+      // load the app from anywhere else.
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      // Left as is:
+      // - GrantFileProtocolExtraPrivileges: the app window is loaded from
+      //   file:// inside app.asar, which fails (ERR_FILE_NOT_FOUND) without
+      //   it; turning it off needs a custom protocol for the window first.
+      // - EnableCookieEncryption: it changes how the WhatsApp sessions are
+      //   stored and could sign the accounts out.
     }),
   ],
 };

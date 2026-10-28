@@ -63,7 +63,7 @@ load. That branch now ships only `.vite/` and `package.json` in `app.asar`
 | Advisory | Package | Reachability | Action |
 |---|---|---|---|
 | Mitigation for compromised eMudhra intermediate certificates (high) | `electron@44.9.0`, fixed in 44.9.1 | Runtime TLS trust store used for every WhatsApp Web connection | **Fixed: Electron updated to 44.10.0** (`c550dcf`); no Electron advisory left in the re-run audit |
-| Several DoS / integer issues (high) | `nanoid@5.1.5` (direct) | Only called with constant sizes to create tab IDs; not fed remote input | Low priority; patch bump within `^5` when touching deps next |
+| Several DoS / integer issues (high) | `nanoid@5.1.5` (direct) | Only called with constant sizes to create tab IDs; not fed remote input | **Fixed: lockfile bump to 5.1.16** (see the re-run below) |
 | Memory exhaustion on oversized constrained collections (high) | `zod@3.24.2` (direct) | Validates settings IPC from our own renderer; fix requires zod 4 (major) | Low priority; do not major-bump without a dedicated change |
 | ReDoS with `$data` option (moderate) | `ajv@8.12.0` via `electron-store` → `conf` | Schema is ours and does not use `$data` | Not reachable |
 
@@ -73,14 +73,42 @@ load. That branch now ships only `.vite/` and `package.json` in `app.asar`
 `@xmldom/xmldom`, `extract-zip`, `js-yaml`, `minimatch`, `glob`,
 `brace-expansion`, `postcss`, `rollup`, `vite`, `express`/`body-parser`/
 `path-to-regexp`/`ws` (Forge dev server), `lodash` (Forge), `tmp`,
-`cross-spawn`, `flatted`, `browserslist`, `builder-util-runtime`/
-`electron-updater` advisories (updater not used by this app).
+`cross-spawn`, `flatted`, `browserslist`, `builder-util-runtime@9.3.1`
+(the copy under `app-builder-lib`; `electron-updater`, which ships in the app
+since 5.8.1-plus.3, uses `builder-util-runtime@9.7.0`, already patched).
 
 These only run on the developer/CI machine against inputs we control
 (our own sources, Electron/NSIS downloads over HTTPS). They matter for
 supply-chain hygiene, not for the installed app. Fixing most of them needs
 major upgrades of Forge / Vite / electron-builder and is out of scope for a
 lockfile-only change.
+
+## Re-run 2026-10-28 (hardening: fuses, CSP, audit)
+
+New advisories appeared after the first audit. Re-run with
+`yarn npm audit --all --recursive --environment production --severity high`,
+then each package's code was looked for in the built bundles
+(`.vite/build/*.js`, `.vite/renderer/main_window/assets/*.js`).
+
+| Package | Ships in the app? | Action |
+|---|---|---|
+| `nanoid` 5.1.5 / 3.3.6 | 5.x yes (tab and theme IDs, default generator only); 3.x via postcss, build only | Lockfile bump within the declared ranges: 5.1.16 and 3.3.20 |
+| `zod` 3.24.2 (GHSA-mrhx-c7xc-m3w5) | Yes | Not reachable: one `safeParse` per settings key, no array schemas, input only from the app's own window (sender-checked). Fix needs zod 4; ignored |
+| `ajv` 8.12.0 (moderate) | Yes, via electron-store | `$data` not used; not reachable |
+| `brace-expansion`, `braces`, `minimatch`, `picomatch`, `postcss`, `source-map-js` | No (tailwindcss / postcss / sucrase / chokidar, CSS build) | Ignored |
+| `cross-spawn`, `glob` CLI, `http-cache-semantics`, `ip-address` | No (node-gyp / cacache / make-fetch-happen) | Ignored |
+| `electron` | Runtime | No advisories |
+
+### Ignored advisories
+
+`.yarnrc.yml` lists the advisory IDs above under `npmAuditIgnoreAdvisories`,
+so that `yarn npm audit` and the weekly **Security audit** workflow only fail
+on advisories nobody has looked at yet. Ignoring is per advisory ID, not per
+package: a new advisory against the same package still fails the check.
+Remove an ID when its package is upgraded past the fix.
+
+The workflow also fails on **any** advisory against `electron`
+(`.github/scripts/check-electron-advisories.mjs`), whatever its severity.
 
 ## Not claimed
 
