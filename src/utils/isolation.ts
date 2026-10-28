@@ -10,6 +10,8 @@ export const APP_ID = "com.lukethehawk.altusplus";
 // folder is kept so accounts paired there stay logged in after the rename,
 // and their autostart entry is removed so only one entry starts the app.
 export const LEGACY_TEST_BUILD_NAME = "Altus Electron 44 Test";
+// Also written by the installer when it replaces the original Altus
+// (ALTUS_PLUS_PROFILE in makers/nsis/replaceAltus.nsh).
 const PROFILE_FOLDER_NAME = LEGACY_TEST_BUILD_NAME;
 
 let configured = false;

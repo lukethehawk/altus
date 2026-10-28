@@ -44,7 +44,20 @@ Il progetto originale non riceve più aggiornamenti. Altus + lo mantiene su una 
 
 Da lì in poi Altus + si aggiorna da solo. Controlla all'avvio (Impostazioni → *Controlla aggiornamenti all'avvio*) oppure da **Aiuto → Controlla aggiornamenti**, poi chiede **Riavvia ora / Più tardi**.
 
-Altus + usa una propria cartella dati. Non legge, modifica né cancella nulla dell'Altus originale, quindi puoi tenerli installati entrambi.
+### Se hai già l'Altus originale
+
+Se sul PC c'è l'Altus originale, alla prima installazione Altus + chiede come procedere:
+
+- **Installa accanto ad Altus**: le due app restano separate, ciascuna con i propri account e impostazioni. Dell'Altus originale non viene letto né modificato nulla.
+- **Sostituisci Altus**:
+  1. Altus viene chiuso.
+  2. Account WhatsApp, schede, impostazioni e temi vengono copiati in Altus +, quindi non serve riscansionare i codici QR.
+  3. Altus viene disinstallato e la sua voce di avvio automatico rimossa.
+  4. La sua cartella dati resta come backup in `%APPDATA%\Altus (backup AAAA-MM-GG)`: cancellala tu quando sei sicuro che tutto funziona.
+
+  Se la copia non riesce, Altus resta com'era.
+
+Aggiornamenti e reinstallazioni non lo chiedono più. Per le installazioni automatiche, `Altus-Plus-Setup-<versione>.exe /S --replace-altus` esegue la sostituzione, mentre `/S` da solo installa accanto ad Altus.
 
 ## Scorciatoie da tastiera
 

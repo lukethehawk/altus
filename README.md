@@ -44,7 +44,20 @@ The original project is no longer updated. Altus + keeps it running on a current
 
 From then on Altus + updates itself. It checks at startup (Settings → *Check for updates at startup*) or from **Help → Check for Updates**, then asks **Restart now / Later**.
 
-Altus + uses its own data folder. It does not read, change or remove anything belonging to the original Altus, so both can stay installed.
+### Coming from the original Altus
+
+If the original Altus is on the PC, a first install of Altus + asks how to proceed:
+
+- **Install next to Altus**: the two apps stay separate, each with its own accounts and settings. Nothing of the original Altus is read or changed.
+- **Replace Altus**:
+  1. Altus is closed.
+  2. Its WhatsApp accounts, tabs, settings and themes are copied into Altus +, so there is no need to scan the QR codes again.
+  3. Altus is uninstalled and its autostart entry removed.
+  4. Its data folder is kept as a backup in `%APPDATA%\Altus (backup YYYY-MM-DD)`; delete it yourself once everything works.
+
+  If the copy fails, Altus is left as it was.
+
+Updates and reinstalls never ask again. For unattended installs, `Altus-Plus-Setup-<version>.exe /S --replace-altus` performs the replacement, and `/S` alone installs next to Altus.
 
 ## Keyboard shortcuts
 
