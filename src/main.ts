@@ -329,6 +329,7 @@ if (!singleInstanceLock) {
       toggleTray(mainWindow, getSettingWithDefault("trayIcon"));
       setupAutoUpdater({
         translate: (key) => electronI18N.t(key),
+        getLanguage: () => electronI18N.getLanguage(),
         icon: mainIcon,
       });
       // Give the accounts time to load before downloading in the background.
