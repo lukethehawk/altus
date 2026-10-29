@@ -1,7 +1,7 @@
 {
   "name": "altus-plus",
   "productName": "Altus +",
-  "version": "5.8.1-plus.7",
+  "version": "5.8.1-plus.8",
   "description": "Altus +: multi-account WhatsApp Web desktop app for Windows, a maintained fork of Altus.",
   "homepage": "https://github.com/lukethehawk/altus-plus",
   "repository": {
@@ -21,7 +21,8 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "tsc --noEmit && eslint --ext .ts,.tsx .",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "smoke": "node .github/scripts/smoke-test.mjs"
   },
   "keywords": [
     "whatsapp",

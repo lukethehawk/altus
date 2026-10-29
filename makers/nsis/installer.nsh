@@ -6,3 +6,13 @@
 !include "${__FILEDIR__}\updateBanner.nsh"
 ; First install next to, or in place of, the original Altus.
 !include "${__FILEDIR__}\replaceAltus.nsh"
+
+; electron-builder allows one customInit; it runs in .onInit, after the
+; install mode (current user / all users) is set and before anything is
+; installed.
+!macro customInit
+  !insertmacro UPDATE_BANNER_INIT
+  !ifndef BUILD_UNINSTALLER
+    !insertmacro ALTUS_SILENT_INIT
+  !endif
+!macroend

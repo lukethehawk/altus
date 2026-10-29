@@ -48,8 +48,10 @@ When it fails:
 1. In one PR, set `electron` in `package.json` to the newest exact version
    from the run summary, run `yarn install`, and bump `version` to the next
    `-plus.N`.
-2. Read the release notes in between. Run the regression checks in
-   `TESTING-ELECTRON44.md` that they touch, then merge.
+2. Read the release notes in between. The PR's smoke test (see
+   `TESTING-ELECTRON44.md`) covers startup, tabs, the installer and the
+   fuses. Run the manual regression checks there that the notes touch, then
+   merge.
 3. Release as described above.
 
 Moving to a new major is a separate, planned change.
