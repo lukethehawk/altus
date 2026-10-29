@@ -1,0 +1,24 @@
+name: Electron updates
+
+# Daily check for newer releases of the pinned Electron major line, which
+# carry Chromium security fixes that usually get no npm advisory, and for the
+# end of support of that line. A failed run (GitHub emails the repository
+# owner) means Electron needs updating; see docs/RELEASING.md.
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  electron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Newer Electron release or end of support
+        run: node .github/scripts/check-electron-release.mjs

@@ -28,6 +28,32 @@ on a manual check and nothing on startup).
 Running installs download the update in the background, offer "Restart now /
 Later", and otherwise install it silently the next time the app quits.
 
+## Electron updates
+
+Electron ships Chromium security fixes in its patch releases, usually
+without an npm advisory. The **Electron updates** workflow
+(`.github/workflows/electron-release.yml`) runs every day and fails, so
+GitHub emails the owner, when:
+
+- a newer release of the pinned major line is out. The run summary lists
+  each one with its date, Chromium version and release notes;
+- the pinned major line is no longer supported. Electron supports the
+  latest three major versions.
+
+It warns without failing when the pinned line becomes the oldest supported
+one, which leaves time to plan the move to a new major.
+
+When it fails:
+
+1. In one PR, set `electron` in `package.json` to the newest exact version
+   from the run summary, run `yarn install`, and bump `version` to the next
+   `-plus.N`.
+2. Read the release notes in between. Run the regression checks in
+   `TESTING-ELECTRON44.md` that they touch, then merge.
+3. Release as described above.
+
+Moving to a new major is a separate, planned change.
+
 ## Testing the updater locally
 
 `ALTUS_TEST_UPDATE_FEED` (read at build time by `vite.main.config.ts`) points a
