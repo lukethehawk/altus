@@ -3,6 +3,8 @@ import {
   type Component,
   createSignal,
   createResource,
+  createEffect,
+  Show,
   onCleanup,
 } from "solid-js";
 import { stableTabArray, tabStore } from "./stores/tabs/solid";
@@ -19,6 +21,27 @@ import DownloadToast from "./components/DownloadToast";
 const App: Component = () => {
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false);
   const [isThemeManagerOpen, setIsThemeManagerOpen] = createSignal(false);
+  // WebViews consume substantial CPU during WhatsApp startup. Start the
+  // selected account immediately, then spread other accounts over time.
+  // Once mounted, every account remains active to keep receiving messages.
+  const [startedTabIds, setStartedTabIds] = createSignal<Set<string>>(new Set());
+  createEffect(() => {
+    const ids = stableTabArray().map((tab) => tab.id);
+    const selectedId = tabStore.selectedTabId;
+    const started = startedTabIds();
+
+    if (selectedId && ids.includes(selectedId) && !started.has(selectedId)) {
+      setStartedTabIds((prev) => new Set([...prev, selectedId]));
+      return;
+    }
+
+    const nextId = ids.find((id) => !started.has(id));
+    if (!nextId) return;
+    const timer = setTimeout(() => {
+      setStartedTabIds((prev) => new Set([...prev, nextId]));
+    }, 650);
+    onCleanup(() => clearTimeout(timer));
+  });
   const [menu, { refetch: refetchAppMenu }] = createResource(window.getAppMenu);
 
   const handlers = new Set<() => void>();
@@ -66,7 +89,9 @@ const App: Component = () => {
                   tabStore.selectedTabId !== tab.id && "hidden"
                 )}
               >
-                <WebView tab={tab} />
+                <Show when={startedTabIds().has(tab.id)}>
+                  <WebView tab={tab} />
+                </Show>
               </div>
             )}
           </For>
