@@ -9,7 +9,8 @@
 ; language setting; --force-run means the app reopens on its own.
 ; Saved as UTF-8 with BOM so NSIS reads the accented text correctly.
 
-!macro customInit
+; Inserted by customInit (installer.nsh).
+!macro UPDATE_BANNER_INIT
   ${if} ${Silent}
     Push $R0
     Push $R1

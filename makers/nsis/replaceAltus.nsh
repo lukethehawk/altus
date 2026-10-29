@@ -133,10 +133,18 @@ Var altusRadioReplace
   FunctionEnd
 !macroend
 
-!macro customInstall
-  ; Silent first installs can ask for the replacement explicitly.
+; Silent first installs can ask for the replacement explicitly. Inserted by
+; customInit (installer.nsh): it must be decided before the install section,
+; because electron-builder registers Altus + as installed before customInstall
+; runs, and ALTUS_SHOULD_OFFER would then take it for a reinstall.
+!macro ALTUS_SILENT_INIT
   ${If} ${Silent}
   ${AndIfNot} ${isUpdated}
+    Push $R0
+    Push $R1
+    Push $R7
+    Push $R8
+    Push $R9
     ${GetParameters} $R0
     ClearErrors
     ${GetOptions} $R0 "--replace-altus" $R1
@@ -147,8 +155,16 @@ Var altusRadioReplace
       ${EndIf}
     ${EndIf}
     ClearErrors
+    Pop $R9
+    Pop $R8
+    Pop $R7
+    Pop $R1
+    Pop $R0
   ${EndIf}
+!macroend
 
+!macro customInstall
+  ; Chosen on the page, or by ALTUS_SILENT_INIT for silent installs.
   ${If} $altusChoice == "replace"
     Push $R0
     Push $R1
