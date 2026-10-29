@@ -246,18 +246,23 @@ async function checkRunningApp(name, exe, args, expected, port) {
     }
 
     await sleep(3000);
-    failures.push(...problems.errors.map((error) => `app window: ${error}`));
+    // The same error usually shows up in both page loads (before and after the reload).
+    failures.push(...new Set(problems.errors.map((error) => `app window: ${error}`)));
     if (problems.warnings.length) notes.push(`${problems.warnings.length} warning(s) in the app window`);
-    if (failures.length) {
-      const shot = await cdp.send("Page.captureScreenshot", { format: "png" }).catch(() => null);
-      if (shot) saveArtifact(`${name}.png`, Buffer.from(shot.data, "base64"));
-    }
   } catch (error) {
     failures.push(error.message);
   } finally {
+    if (failures.length && cdp) {
+      const shot = await cdp.send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+      if (shot) saveArtifact(`${name}.png`, Buffer.from(shot.data, "base64"));
+    }
     cdp?.close();
     await stop(app).catch((error) => failures.push(error.message));
-    if (failures.length) saveArtifact(`${name}.log`, app.output);
+    if (failures.length) {
+      saveArtifact(`${name}.log`, app.output);
+      const appErrors = [...new Set(app.output.split(/\r?\n/).filter((line) => /Failed to load|ERR_|FATAL|Error:/.test(line)))];
+      failures.push(...appErrors.slice(0, 3).map((line) => `app log: ${line.trim()}`));
+    }
   }
   return { failures, notes };
 }
@@ -422,6 +427,9 @@ async function checkInstallReplacingOriginal() {
 
 async function checkReinstall() {
   const profile = path.join(APPDATA, PROFILE_FOLDER);
+  if (!fs.existsSync(path.join(profile, "tabs.json"))) {
+    return { failures: ["no Altus + profile to compare: the migration in check 4 did not create it"], notes: [] };
+  }
   const before = Object.fromEntries(["settings.json", "tabs.json"].map((file) => [file, readJson(path.join(profile, file))]));
   // Original data shows up again: a reinstall must still leave it alone.
   const otherTabs = [{ ...ORIGINAL_TABS[0], id: "smokeAltroTab00000003", name: "Altro" }];
@@ -441,6 +449,8 @@ async function checkUninstall() {
   const programDir = path.dirname(install.exe);
   const uninstaller = fs.readdirSync(programDir).find((file) => /^Uninstall .*\.exe$/.test(file));
   if (!uninstaller) return { failures: [`no uninstaller in ${programDir}`], notes: [] };
+  const profile = path.join(APPDATA, PROFILE_FOLDER);
+  const profileExisted = fs.existsSync(path.join(profile, "tabs.json"));
   // Without _?= the uninstaller copies itself to %TEMP% and returns at once.
   spawnSync(path.join(programDir, uninstaller), ["/currentuser", "/S"], { timeout: 120_000 });
   const failures = [];
@@ -449,8 +459,8 @@ async function checkUninstall() {
   } catch (error) {
     failures.push(error.message);
   }
-  const profile = path.join(APPDATA, PROFILE_FOLDER);
-  if (!fs.existsSync(path.join(profile, "tabs.json"))) failures.push("the uninstaller removed the Altus + profile");
+  if (!profileExisted) failures.push("no Altus + profile to check: the migration in check 4 did not create it");
+  else if (!fs.existsSync(path.join(profile, "tabs.json"))) failures.push("the uninstaller removed the Altus + profile");
   return { failures, notes: [] };
 }
 
