@@ -94,3 +94,6 @@ dist/
 
 # Yarn
 .yarn/install-state.gz
+
+# Smoke test output (.github/scripts/smoke-test.mjs)
+smoke-artifacts/

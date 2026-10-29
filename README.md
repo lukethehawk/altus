@@ -102,6 +102,7 @@ yarn install --immutable
 yarn start        # run in development
 yarn lint         # type check + ESLint
 yarn test         # unit tests
+yarn smoke        # smoke test of the packaged app (after yarn package)
 yarn make         # Windows installer in out/make
 ```
 

@@ -104,6 +104,31 @@ logged in.
       uninstalls the original and removes its `Altus` autostart entry.
     - Reinstalling or updating Altus + never shows the page.
 
+### Automated smoke test
+
+Every PR (`windows-package` check) and every `master` build run
+`.github/scripts/smoke-test.mjs` on the packaged app. A `master` build that
+fails it uploads no installer.
+
+1. The fuses in the executable match `forge.config.ts`.
+2. A modified `app.asar` is refused at startup.
+3. On a fresh profile, the window loads in English with one tab. That tab
+   reaches WhatsApp Web, and its preload reports the tab's ID. The app
+   window has a Content-Security-Policy and logs no console errors,
+   exceptions or CSP violations.
+4. `Setup.exe /S --replace-altus` with fake original Altus data (Italian,
+   tabs "Personale" and "Lavoro"):
+   - the profile is copied and the backup folder is created;
+   - the installed app opens those tabs, in Italian, on the original
+     partitions.
+5. A reinstall changes neither the Altus + profile nor the original data.
+6. Uninstalling removes the program and keeps the profile.
+
+Failures attach logs and screenshots (`smoke-artifacts`) to the run. Checks
+4-6 install and uninstall for real, so they only run on GitHub's throwaway
+runners. Locally, `yarn package -p win32` then `yarn smoke` runs checks 1-3
+on a temporary profile.
+
 ### Packaged smoke run without touching your profile
 
 `--user-data-dir` overrides the profile folder and skips autostart changes,

@@ -28,6 +28,17 @@ jobs:
         run: yarn test
       - name: Package Windows installer
         run: yarn make -p win32
+      # A build that fails the smoke test is never uploaded, so never released.
+      - name: Smoke test (app, installer, migration, uninstall)
+        run: yarn smoke --installer
+      - name: Smoke test logs and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-artifacts
+          path: smoke-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Downloadable Windows installer
         uses: actions/upload-artifact@v4
         with:
