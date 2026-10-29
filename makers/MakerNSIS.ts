@@ -56,8 +56,9 @@ export default class MakerNSIS extends MakerBase<MakerOptions> {
             ),
             artifactName: "Altus-Plus-Setup-${version}.${ext}",
             allowToChangeInstallationDirectory: true,
-            // Shows "Updating Altus +..." while an in-app update installs.
-            include: path.resolve(__dirname, "nsis", "updateBanner.nsh"),
+            // Update notice and the first-install choice next to / in place
+            // of the original Altus (makers/nsis/).
+            include: path.resolve(__dirname, "nsis", "installer.nsh"),
           },
           // Describes where releases live so latest.yml (version + SHA512)
           // and the .blockmap for the in-app updater are generated; nothing

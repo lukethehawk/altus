@@ -94,6 +94,15 @@ logged in.
     Italiano switches menus, settings, tab dialogs, tray menu, the tab
     right-click menu and the exit prompt at once, with no English left;
     the choice survives a restart and English switches everything back.
+12. **Original Altus on the PC (first install only):** the installer shows
+    "Altus is already installed".
+    - *Install next to Altus* leaves the original program, data and
+      autostart untouched.
+    - *Replace Altus* closes it and copies its profile into Altus +, which
+      opens with the same tabs and settings and the accounts still logged in.
+      It then renames `%APPDATA%\Altus` to `Altus (backup <date>)`,
+      uninstalls the original and removes its `Altus` autostart entry.
+    - Reinstalling or updating Altus + never shows the page.
 
 ### Packaged smoke run without touching your profile
 
