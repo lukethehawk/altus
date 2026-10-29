@@ -95,9 +95,11 @@ then each package's code was looked for in the built bundles
 | `nanoid` 5.1.5 / 3.3.6 | 5.x yes (tab and theme IDs, default generator only); 3.x via postcss, build only | Lockfile bump within the declared ranges: 5.1.16 and 3.3.20 |
 | `zod` 3.24.2 (GHSA-mrhx-c7xc-m3w5) | Yes | Not reachable: one `safeParse` per settings key, no array schemas, input only from the app's own window (sender-checked). **Later fixed: zod 4.6.6**, no longer ignored |
 | `ajv` 8.12.0 (moderate) | Yes, via electron-store | `$data` not used; not reachable |
-| `brace-expansion`, `braces`, `minimatch`, `picomatch`, `postcss` | No (tailwindcss / postcss / sucrase / chokidar, CSS build) | Ignored |
+| `braces`, `minimatch`, `picomatch`, `postcss` | No (tailwindcss / postcss / sucrase / chokidar, CSS build) | Ignored |
+| `brace-expansion` 1.1.11 / 2.0.1 | No (CSS build; 2.x via app-builder-lib → minimatch, installer build) | **Later fixed: 1.1.21** (Dependabot #26) **and 2.1.7** (lockfile bump), no longer ignored |
 | `source-map-js` 1.0.2 | No (postcss) | **Later fixed: 1.2.2** (Dependabot #22), no longer ignored |
-| `cross-spawn`, `glob` CLI, `http-cache-semantics`, `ip-address` | No (node-gyp / cacache / make-fetch-happen) | Ignored |
+| `cross-spawn`, `glob` CLI, `ip-address` | No (node-gyp / cacache / make-fetch-happen) | Ignored |
+| `http-cache-semantics` 4.1.1 (GHSA-ch52-4w7c-c8xp) | No (make-fetch-happen) | **Advisory withdrawn** by GitHub on 2026-10-28 (not a fix; version unchanged), no longer ignored |
 | `electron` | Runtime | No advisories |
 
 ### Ignored advisories
@@ -106,7 +108,9 @@ then each package's code was looked for in the built bundles
 so that `yarn npm audit` and the weekly **Security audit** workflow only fail
 on advisories nobody has looked at yet. Ignoring is per advisory ID, not per
 package: a new advisory against the same package still fails the check.
-Remove an ID when its package is upgraded past the fix.
+Remove an ID when its package is upgraded past the fix or the advisory is
+withdrawn, after re-running the audit with the ignore list off
+(`YARN_NPM_AUDIT_IGNORE_ADVISORIES=0`) to confirm it is no longer reported.
 
 The workflow also fails on **any** advisory against `electron`
 (`.github/scripts/check-electron-advisories.mjs`), whatever its severity.
