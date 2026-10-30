@@ -28,7 +28,9 @@ test("without the option, autostart behaves as before", () => {
   assert.equal(getStartupWindowMode({ ...base, launchToTray: false, launchMinimized: true }), "minimized");
 });
 
-test("the legacy cleanup targets the test build's entry, not this app's", () => {
+// auto-launch only accepts Windows paths on Windows. The smoke test (check 5)
+// covers the same on every PR with the real registry.
+test("the legacy cleanup targets the test build's entry, not this app's", { skip: process.platform !== "win32" }, () => {
   const exe = "C:\\Users\\me\\AppData\\Local\\Programs\\Altus +\\Altus +.exe";
   // auto-launch names the Run value after the exe and ignores `name`...
   assert.equal(new AutoLaunch({ name: "Altus Electron 44 Test", path: exe }).opts.appName, "Altus +");
