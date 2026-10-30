@@ -73,6 +73,9 @@ const SettingsDialog: Component<{
                     if (!checked && getSettingValue("closeToTray")) {
                       setSettingValue("closeToTray", false);
                     }
+                    if (!checked && getSettingValue("launchToTray")) {
+                      setSettingValue("launchToTray", false);
+                    }
                   }}
                   class="items-start"
                 >
@@ -214,6 +217,26 @@ const SettingsDialog: Component<{
                     <div class="font-semibold">{t("launchMinimized")}</div>
                     <div class="text-zinc-300 max-w-[30ch] leading-snug text-sm">
                       {t("launchMinimizedDescription")}
+                    </div>
+                  </div>
+                </StyledSwitch>
+              </div>
+              <div class="py-2.5">
+                <StyledSwitch
+                  checked={getSettingValue("launchToTray")}
+                  onChange={(checked) => {
+                    setSettingValue("launchToTray", checked);
+                    // Hidden in the tray needs the tray icon to come back.
+                    if (checked && !getSettingValue("trayIcon")) {
+                      setSettingValue("trayIcon", true);
+                    }
+                  }}
+                  class="items-start"
+                >
+                  <div class="flex flex-col gap-1.5">
+                    <div class="font-semibold">{t("launchToTray")}</div>
+                    <div class="text-zinc-300 max-w-[30ch] leading-snug text-sm">
+                      {t("launchToTrayDescription")}
                     </div>
                   </div>
                 </StyledSwitch>

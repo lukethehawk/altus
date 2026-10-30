@@ -46,6 +46,7 @@ import {
 import { getPartitionsToPrune } from "./utils/partitions";
 import { recoverRendererOnFailure } from "./utils/rendererRecovery";
 import { REPOSITORY_URL } from "./utils/updates";
+import { AUTOSTART_FLAG, autostartPathFor, getStartupWindowMode } from "./utils/startup";
 import {
   checkForUpdates,
   installDownloadedUpdate,
@@ -199,11 +200,19 @@ function createWindow() {
 
   // The window starts hidden; minimizing it before ready-to-show could
   // leave it inaccessible on some systems. Wait until its first paint.
+  // Started with Windows and "Start in tray": stay hidden; the tabs load and
+  // notify as usual, and the tray icon or a notification opens the window.
   mainWindow.once("ready-to-show", () => {
-    if (getSettingWithDefault("launchMinimized")) {
+    const mode = getStartupWindowMode({
+      startedByAutostart: process.argv.includes(AUTOSTART_FLAG),
+      launchToTray: getSettingWithDefault("launchToTray"),
+      trayIcon: getSettingWithDefault("trayIcon"),
+      launchMinimized: getSettingWithDefault("launchMinimized"),
+    });
+    if (mode === "minimized") {
       mainWindow.showInactive();
       mainWindow.minimize();
-    } else {
+    } else if (mode === "normal") {
       mainWindow.show();
       mainWindow.focus();
     }
@@ -288,17 +297,23 @@ if (!singleInstanceLock) {
     // A smoke-test run on a throwaway profile must not rewrite the autostart
     // entry of the installed app, which shares the same name.
     if (!hasExplicitProfileDirectory()) {
+      // isHidden adds AUTOSTART_FLAG, so the app knows it started with Windows.
       const autoLauncher = new AutoLaunch({
         name: APP_NAME,
+        isHidden: true,
       });
       // disable() rejects when no entry exists yet; nothing to do then.
-      (getSettingWithDefault("autoLaunch")
-        ? autoLauncher.enable()
-        : autoLauncher.disable()
-      ).catch((error) => console.warn("Autostart update failed", error));
+      const autoLaunch = getSettingWithDefault("autoLaunch");
+      (autoLaunch ? autoLauncher.enable() : autoLauncher.disable())
+        .then(() => console.info(`Autostart entry ${autoLaunch ? "set" : "removed"}`))
+        .catch((error) => console.warn("Autostart update failed", error));
       // The test builds registered autostart under their own name; drop that
-      // entry so the old executable is not launched next to this one.
-      new AutoLaunch({ name: LEGACY_TEST_BUILD_NAME })
+      // entry so the old executable is not launched next to this one. Without
+      // the path, auto-launch would remove this app's entry ("Altus +") instead.
+      new AutoLaunch({
+        name: LEGACY_TEST_BUILD_NAME,
+        path: autostartPathFor(LEGACY_TEST_BUILD_NAME, process.execPath),
+      })
         .disable()
         .catch(() => undefined);
     }

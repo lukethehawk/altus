@@ -71,7 +71,11 @@ logged in.
    renderer processes. The affected tab (or the whole window, if that
    renderer was the app UI) reloads within a few seconds on its own and stays
    logged in; other accounts are not reloaded.
-6. Autostart on/off in settings still applies after a restart.
+6. Autostart on/off in settings still applies after a restart. With
+   **Start in tray with Windows** also on, signing in to Windows shows only
+   the tray icon. A message still notifies, and the tray icon or the
+   notification opens the window with the accounts already connected.
+   Opening Altus + from the Start menu always shows the window.
 7. **Download notice:** download an attachment; "Attachment saved / Show in
    folder" appears for a few seconds and the button opens Explorer with the
    file selected. With "Show save dialog" on (the default) it appears after
@@ -116,17 +120,21 @@ fails it uploads no installer.
    reaches WhatsApp Web, and its preload reports the tab's ID. The app
    window has a Content-Security-Policy and logs no console errors,
    exceptions or CSP violations.
-4. `Setup.exe /S --replace-altus` with fake original Altus data (Italian,
-   tabs "Personale" and "Lavoro"):
+4. With "Start in tray with Windows" on, a start with `--hidden` (what the
+   autostart entry runs) shows no window, yet the tab reaches WhatsApp
+   Web. A start without it shows the window.
+5. `Setup.exe /S --replace-altus` with fake original Altus data (Italian,
+   tabs "Personale" and "Lavoro", autostart on):
    - the profile is copied and the backup folder is created;
    - the installed app opens those tabs, in Italian, on the original
-     partitions.
-5. A reinstall changes neither the Altus + profile nor the original data.
-6. Uninstalling removes the program and keeps the profile.
+     partitions;
+   - the app's autostart entry runs the installed exe with `--hidden`.
+6. A reinstall changes neither the Altus + profile nor the original data.
+7. Uninstalling removes the program and keeps the profile.
 
 Failures attach logs and screenshots (`smoke-artifacts`) to the run. Checks
-4-6 install and uninstall for real, so they only run on GitHub's throwaway
-runners. Locally, `yarn package -p win32` then `yarn smoke` runs checks 1-3
+5-7 install and uninstall for real, so they only run on GitHub's throwaway
+runners. Locally, `yarn package -p win32` then `yarn smoke` runs checks 1-4
 on a temporary profile.
 
 ### Packaged smoke run without touching your profile

@@ -53,6 +53,8 @@
   "promptWhenClosingTabDescription": "When enabled, you will be prompted when you close a tab",
   "launchMinimized": "Start Minimized",
   "launchMinimizedDescription": "When enabled, the app will start minimized",
+  "launchToTray": "Start in Tray with Windows",
+  "launchToTrayDescription": "When Altus + starts with Windows, it stays in the tray without opening the window. Accounts connect and notify as usual. Needs the tray icon.",
   "rememberWindowSize": "Remember Window Size",
   "rememberWindowSizeDescription": "When enabled, Altus will remember the size of the window from previous use",
   "rememberWindowPosition": "Remember Window Position",
