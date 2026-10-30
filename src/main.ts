@@ -47,6 +47,7 @@ import { getPartitionsToPrune } from "./utils/partitions";
 import { recoverRendererOnFailure } from "./utils/rendererRecovery";
 import { REPOSITORY_URL } from "./utils/updates";
 import { AUTOSTART_FLAG, autostartPathFor, getStartupWindowMode } from "./utils/startup";
+import { attachEnterKeys } from "./utils/keyboard";
 import {
   checkForUpdates,
   installDownloadedUpdate,
@@ -430,30 +431,12 @@ if (!singleInstanceLock) {
       });
     }
 
-    webContents.on("before-input-event", (event, input) => {
-      if (getSettingWithDefault("preventEnter")) {
-        if (input.key === "Enter" && !input.shift && !input.control) {
-          webContents.sendInputEvent({
-            keyCode: "Shift+Return",
-            type: "keyDown",
-          });
-          event.preventDefault();
-          return;
-        }
-
-        if (input.key === "Enter" && input.control) {
-          try {
-            webContents.executeJavaScript(
-              `document.querySelector('button[aria-label="Send"]').click()`
-            );
-          } catch (error) {
-            console.error(error);
-          }
-          event.preventDefault();
-          return;
-        }
-      }
-    });
+    // Enter as a new line, and the keys that send instead (Ctrl+Enter,
+    // Right Shift+Enter): see src/utils/keyboard.ts.
+    attachEnterKeys(webContents, () => ({
+      preventEnter: getSettingWithDefault("preventEnter"),
+      sendWithRightShiftEnter: getSettingWithDefault("sendWithRightShiftEnter"),
+    }));
   });
 }
 

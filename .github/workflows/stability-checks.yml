@@ -44,6 +44,9 @@ jobs:
         run: yarn make -p win32
       - name: Smoke test (app, installer, migration, uninstall)
         run: yarn smoke --installer
+      - name: Enter keys (new line, Ctrl+Enter, Right Shift+Enter)
+        if: ${{ !cancelled() }}
+        run: yarn test:keys
       - name: Smoke test logs and screenshots
         if: failure()
         uses: actions/upload-artifact@v4
