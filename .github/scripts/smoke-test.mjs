@@ -1,18 +1,20 @@
 // Smoke test of the packaged Windows app, run by CI after `yarn make`.
 //
-//   node .github/scripts/smoke-test.mjs              checks 1-3 (`yarn smoke`)
-//   node .github/scripts/smoke-test.mjs --installer  checks 1-6
+//   node .github/scripts/smoke-test.mjs              checks 1-4 (`yarn smoke`)
+//   node .github/scripts/smoke-test.mjs --installer  checks 1-7
 //
 // 1. fuses baked into the executable;
 // 2. a modified app.asar is refused at startup;
 // 3. a fresh profile (--user-data-dir) opens the window and a WhatsApp Web tab,
 //    with no errors in the app window;
-// 4. the installer replaces a fake original Altus (/S --replace-altus) and the
-//    installed app opens its tabs and settings;
-// 5. reinstalling never migrates again or touches the Altus + profile;
-// 6. uninstalling removes the program and keeps the profile.
+// 4. "Start in tray with Windows": started with the autostart flag the window
+//    stays hidden while the tab still loads; started by hand it opens;
+// 5. the installer replaces a fake original Altus (/S --replace-altus), the
+//    installed app opens its tabs and settings and registers autostart;
+// 6. reinstalling never migrates again or touches the Altus + profile;
+// 7. uninstalling removes the program and keeps the profile.
 //
-// Checks 4-6 install Altus +, write %APPDATA% and uninstall, so they only run
+// Checks 5-7 install Altus +, write %APPDATA% and uninstall, so they only run
 // on a GitHub-hosted runner, which is discarded afterwards. The app is
 // observed through Chromium's DevTools protocol (--remote-debugging-port) and
 // stopped by PID. Failures leave logs and screenshots in smoke-artifacts/.
@@ -22,6 +24,7 @@ import os from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
@@ -69,6 +72,40 @@ async function stop(app) {
   if (!app.exited) spawnSync("taskkill", ["/PID", String(app.child.pid), "/T", "/F"], { stdio: "ignore" });
   await waitFor("the app to exit", 30_000, () => app.exited);
   await sleep(2000); // let Chromium release the profile's files
+}
+
+/**
+ * Visible top-level Chromium windows of a process (Win32 IsWindowVisible).
+ * Unlike document.visibilityState it does not depend on the window being
+ * covered or the screen being locked.
+ */
+function visibleWindowCount(pid) {
+  const script = `
+Add-Type @"
+using System; using System.Runtime.InteropServices; using System.Text;
+public static class SmokeWindows {
+  public delegate bool Callback(IntPtr window, IntPtr data);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(Callback callback, IntPtr data);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr window, StringBuilder name, int size);
+  public static int CountVisible(uint pid) {
+    int count = 0;
+    EnumWindows((window, data) => {
+      uint owner; GetWindowThreadProcessId(window, out owner);
+      var name = new StringBuilder(64); GetClassName(window, name, 64);
+      if (owner == pid && name.ToString() == "Chrome_WidgetWin_1" && IsWindowVisible(window)) count++;
+      return true;
+    }, IntPtr.Zero);
+    return count;
+  }
+}
+"@
+[SmokeWindows]::CountVisible(${Number(pid)})`;
+  const result = spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8" });
+  const count = Number.parseInt(result.stdout.trim(), 10);
+  if (Number.isNaN(count)) throw new Error(`could not read the app's windows: ${result.stderr.trim().slice(0, 200)}`);
+  return count;
 }
 
 async function targets(port) {
@@ -197,6 +234,9 @@ async function checkRunningApp(name, exe, args, expected, port) {
       return value.ready === "complete" && value.root > 0 && value.webviews.length >= expected.tabCount ? value : null;
     });
 
+    const shown = visibleWindowCount(app.child.pid);
+    if (expected.windowShown && shown === 0) failures.push("the app window was not shown");
+    if (!expected.windowShown && shown > 0) failures.push("the app window was shown instead of staying in the tray");
     if (!state.csp.includes("default-src 'self'")) failures.push("the app window has no Content-Security-Policy");
     if (!state.text.includes(expected.label)) failures.push(`the window is not in the expected language (no "${expected.label}")`);
     if (state.text.includes(expected.otherLabel)) failures.push(`the window shows "${expected.otherLabel}" from the other language`);
@@ -211,7 +251,8 @@ async function checkRunningApp(name, exe, args, expected, port) {
       const id = webview.id.replace(/^webview-/, "");
       tabIds.push(id);
       if (webview.partition !== `persist:${id}`) failures.push(`tab ${id} uses partition ${webview.partition}`);
-      if (!/^https:\/\/web\.whatsapp\.com\/?$/.test(webview.src ?? "")) failures.push(`tab ${id} loads ${webview.src}`);
+      // src follows navigation (e.g. WhatsApp's /login/), so only the origin is fixed.
+      if (!/^https:\/\/web\.whatsapp\.com(\/|$)/.test(webview.src ?? "")) failures.push(`tab ${id} loads ${webview.src}`);
     }
     if (expected.tabIds && !sameJson([...tabIds].sort(), [...expected.tabIds].sort())) {
       failures.push(`tab IDs ${tabIds.join(", ")} instead of ${expected.tabIds.join(", ")}`);
@@ -264,7 +305,7 @@ async function checkRunningApp(name, exe, args, expected, port) {
       failures.push(...appErrors.slice(0, 3).map((line) => `app log: ${line.trim()}`));
     }
   }
-  return { failures, notes };
+  return { failures, notes, output: app.output };
 }
 
 // --- checks ----------------------------------------------------------------
@@ -337,6 +378,7 @@ async function checkFreshProfile() {
     otherLabel: ADD_TAB_LABEL.it,
     tabNames: ["New Tab"],
     tabCount: 1,
+    windowShown: true,
   }, 9411);
   if (!fs.existsSync(path.join(profile, "tabs.json"))) result.failures.push("the app did not save its tabs in --user-data-dir");
   if (!realProfileExisted && fs.existsSync(realProfile)) {
@@ -344,6 +386,29 @@ async function checkFreshProfile() {
   }
   removeTemp(profile);
   return result;
+}
+
+async function checkStartInTray() {
+  const profile = fs.mkdtempSync(path.join(TEMP, "as-p-"));
+  fs.writeFileSync(path.join(profile, "settings.json"), JSON.stringify({ launchToTray: { value: true } }));
+  const expected = { label: ADD_TAB_LABEL.en, otherLabel: ADD_TAB_LABEL.it, tabNames: ["New Tab"], tabCount: 1 };
+  // What the autostart entry runs (auto-launch isHidden adds --hidden).
+  const atLogin = await checkRunningApp("start-in-tray", PACKAGED_EXE, [`--user-data-dir=${profile}`, "--hidden"], {
+    ...expected,
+    windowShown: false,
+  }, 9413);
+  const byHand = await checkRunningApp("start-in-tray-manual", PACKAGED_EXE, [`--user-data-dir=${profile}`], {
+    ...expected,
+    windowShown: true,
+  }, 9414);
+  removeTemp(profile);
+  return {
+    failures: [
+      ...atLogin.failures.map((line) => `with Windows: ${line}`),
+      ...byHand.failures.map((line) => `by hand: ${line}`),
+    ],
+    notes: [...atLogin.notes, ...byHand.notes],
+  };
 }
 
 // Fake data of the original Altus (same file formats as Altus +).
@@ -360,7 +425,7 @@ const ORIGINAL_TABS = [
 function seedOriginalAltus(tabs) {
   const original = path.join(APPDATA, "Altus");
   const files = {
-    "settings.json": { language: { value: "it" }, tabBarPosition: { value: "bottom" } },
+    "settings.json": { language: { value: "it" }, tabBarPosition: { value: "bottom" }, autoLaunch: { value: true } },
     "tabs.json": { tabs, previouslyClosedTab: null, selectedTabId: tabs[0].id },
   };
   for (const [file, data] of Object.entries(files)) {
@@ -389,6 +454,26 @@ function findInstalledExe(installDir) {
 
 const install = { dir: path.join(TEMP, "as-install"), exe: null };
 
+/**
+ * HKCU\...\Run through winreg, the library the app writes it with (through
+ * auto-launch).
+ */
+function runKey() {
+  const Winreg = createRequire(import.meta.url)(path.join(root, "node_modules", "winreg"));
+  return { Winreg, key: new Winreg({ hive: Winreg.HKCU, key: "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" }) };
+}
+
+function readRunEntry(name) {
+  return new Promise((resolve) => {
+    runKey().key.get(name, (error, item) => resolve(error ? { error: error.message.split(/\r?\n/)[0] } : { value: item.value }));
+  });
+}
+
+function writeRunEntry(name, value) {
+  const { Winreg, key } = runKey();
+  return new Promise((resolve, reject) => key.set(name, Winreg.REG_SZ, value, (error) => (error ? reject(error) : resolve())));
+}
+
 async function checkInstallReplacingOriginal() {
   const installer = findInstaller();
   const profile = path.join(APPDATA, PROFILE_FOLDER);
@@ -414,21 +499,42 @@ async function checkInstallReplacingOriginal() {
   else if (!fs.existsSync(path.join(APPDATA, found[0], "tabs.json"))) failures.push(`${found[0]} has no tabs.json`);
   if (failures.length || !install.exe) return { failures, notes: [] };
 
+  // An entry left by the "Altus Electron 44 Test" builds, which the app
+  // removes on start (named after that build's exe).
+  const legacyName = PROFILE_FOLDER;
+  await writeRunEntry(legacyName, `"C:\\Program Files\\${legacyName}\\${legacyName}.exe"`);
+
   const result = await checkRunningApp("installed-app", install.exe, [], {
     label: ADD_TAB_LABEL.it,
     otherLabel: ADD_TAB_LABEL.en,
     tabNames: ORIGINAL_TABS.map((tab) => tab.name),
     tabIds: ORIGINAL_TABS.map((tab) => tab.id),
     tabCount: ORIGINAL_TABS.length,
+    windowShown: true,
   }, 9412);
   result.notes.unshift(`installed to ${path.dirname(install.exe)}, backup ${found[0]}`);
+
+  // The migrated settings turn autostart on: the entry must start the
+  // installed exe with the flag "Start in tray with Windows" relies on.
+  const { value: entry, error } = await readRunEntry(packageJson.productName);
+  const expectedEntry = `"${install.exe}" --hidden`;
+  const legacy = await readRunEntry(legacyName);
+  if (legacy.value) result.failures.push(`the "${legacyName}" autostart entry was not removed`);
+  if (entry?.trim().toLowerCase() !== expectedEntry.toLowerCase()) {
+    result.failures.push(`autostart entry is ${entry ? `'${entry}'` : `missing (${error})`}, expected '${expectedEntry}'`);
+    const autostartLog = (result.output ?? "").split(/\r?\n/).filter((line) => /autostart|auto-launch|winreg|reg\.exe/i.test(line));
+    result.failures.push(autostartLog.length
+      ? `app log: ${autostartLog.slice(0, 3).map((line) => line.trim()).join(" | ")}`
+      : "app log: no autostart line (the update never finished)");
+    saveArtifact("installed-app.log", result.output ?? "");
+  }
   return result;
 }
 
 async function checkReinstall() {
   const profile = path.join(APPDATA, PROFILE_FOLDER);
   if (!fs.existsSync(path.join(profile, "tabs.json"))) {
-    return { failures: ["no Altus + profile to compare: the migration in check 4 did not create it"], notes: [] };
+    return { failures: ["no Altus + profile to compare: the migration in check 5 did not create it"], notes: [] };
   }
   const before = Object.fromEntries(["settings.json", "tabs.json"].map((file) => [file, readJson(path.join(profile, file))]));
   // Original data shows up again: a reinstall must still leave it alone.
@@ -459,7 +565,7 @@ async function checkUninstall() {
   } catch (error) {
     failures.push(error.message);
   }
-  if (!profileExisted) failures.push("no Altus + profile to check: the migration in check 4 did not create it");
+  if (!profileExisted) failures.push("no Altus + profile to check: the migration in check 5 did not create it");
   else if (!fs.existsSync(path.join(profile, "tabs.json"))) failures.push("the uninstaller removed the Altus + profile");
   return { failures, notes: [] };
 }
@@ -478,12 +584,13 @@ const checks = [
   ["1. Fuses", checkFuses],
   ["2. Modified app.asar is refused", checkTamperedAsar],
   ["3. Fresh profile: window, tab, WhatsApp Web, no errors", checkFreshProfile],
+  ["4. Start in tray with Windows: hidden but connected; opens when started by hand", checkStartInTray],
 ];
 if (runInstaller) {
   checks.push(
-    ["4. Installer replaces the original Altus; app opens its tabs and settings", checkInstallReplacingOriginal],
-    ["5. Reinstall leaves the profile and the original data alone", checkReinstall],
-    ["6. Uninstall removes the program and keeps the profile", checkUninstall],
+    ["5. Installer replaces the original Altus; app opens its tabs and settings", checkInstallReplacingOriginal],
+    ["6. Reinstall leaves the profile and the original data alone", checkReinstall],
+    ["7. Uninstall removes the program and keeps the profile", checkUninstall],
   );
 }
 
@@ -513,8 +620,8 @@ for (const [name, check] of checks) {
   console.log(`${result.failures.length ? "FAIL" : "ok  "} ${name} (${seconds}s)`);
   for (const line of result.failures) console.log(`       - ${line}`);
   for (const line of result.notes) console.log(`       ${line}`);
-  // Checks 5 and 6 need the installed app.
-  if (name.startsWith("4.") && !install.exe) blocked = true;
+  // Checks 6 and 7 need the installed app.
+  if (name.startsWith("5.") && !install.exe) blocked = true;
 }
 
 const failed = results.filter((result) => result.failures.length);

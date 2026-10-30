@@ -53,6 +53,8 @@
   "promptWhenClosingTabDescription": "Se attivo, ti viene chiesta conferma quando chiudi una scheda",
   "launchMinimized": "Avvia ridotto a icona",
   "launchMinimizedDescription": "Se attivo, l'app si avvia ridotta a icona",
+  "launchToTray": "Avvia nell'area di notifica con Windows",
+  "launchToTrayDescription": "Quando Altus + parte con Windows resta nell'area di notifica senza aprire la finestra. Gli account si collegano e notificano come sempre. Richiede l'icona nell'area di notifica.",
   "rememberWindowSize": "Ricorda le dimensioni della finestra",
   "rememberWindowSizeDescription": "Se attivo, Altus + riapre la finestra con le dimensioni dell'ultimo utilizzo",
   "rememberWindowPosition": "Ricorda la posizione della finestra",
