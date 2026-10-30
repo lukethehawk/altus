@@ -107,6 +107,15 @@ logged in.
       It then renames `%APPDATA%\Altus` to `Altus (backup <date>)`,
       uninstalls the original and removes its `Altus` autostart entry.
     - Reinstalling or updating Altus + never shows the page.
+13. **Enter keys**, in a real chat, with WhatsApp in Italian too:
+    - with "Prevent sending message on Enter" on, Enter adds a new line and
+      Ctrl+Enter sends;
+    - with "Send with Right Shift + Enter" on, Right Shift + Enter sends
+      (also twice in a row while holding Right Shift), and Left Shift +
+      Enter adds a new line.
+
+    `yarn test:keys` (also run in CI) checks the same key handling in an
+    Electron window.
 
 ### Automated smoke test
 
